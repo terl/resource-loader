@@ -1,0 +1,36 @@
+plugins {
+    id 'java-library'
+    id 'application'
+    id 'idea'
+}
+
+ext {
+    artifactId = "resource-loader"
+    groupId = "co.libly"
+    version = '1.1.2'
+    description = "Resource Loader gives you the functions to load resource files inside JARs or outside."
+}
+
+
+group project.ext.groupId
+version = project.ext.version
+mainClassName = "co.libly.resourceloader.ResourceLoader"
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.5.1'
+}
+
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
