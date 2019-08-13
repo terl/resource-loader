@@ -1,7 +1,10 @@
 package co.libly.resourceloader;
 
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.*;
+import java.net.URL;
 import java.nio.file.*;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.HashSet;
@@ -15,42 +18,45 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ResourceLoader {
 
-    protected final JnaLoader loader;
     protected final Object lock = new Object();
     protected final ConcurrentHashMap<String, File> loadedFiles = new ConcurrentHashMap<>();
 
-    // VisibleForTesting
-    ResourceLoader(JnaLoader loader) {
-        this.loader = loader;
+    ResourceLoader() {
     }
 
     public File copyFromJarToTemp(String pathInJar, String folderName, Set<PosixFilePermission> filePermissions) throws IOException {
+        // If the file does not start with a separator,
+        // then let's make sure it does!
         if (!pathInJar.startsWith(File.separator)) {
             pathInJar = File.separator + pathInJar;
         }
 
-        File tempFolder = createMainTempDirectory();
+        // Create a "main" temporary directory in which
+        // everything can be thrown in.
+        File mainTempDir = createMainTempDirectory();
+
+        // If the user wants to then put their files
+        // in a subfolder, then so be it. Change
+        // the main temp folder to be the new sub folder.
         if (folderName != null && !folderName.isEmpty()) {
-            tempFolder = new File(tempFolder, folderName);
+            mainTempDir = new File(mainTempDir, folderName);
         }
 
-        File fileInJar = new File(pathInJar);
-        File fileInTempFolder = new File(tempFolder, fileInJar.getName());
-        fileInTempFolder.createNewFile();
+        // Create the required directories.
+        mainTempDir.mkdirs();
 
-        InputStream is = ResourceLoader.class.getResourceAsStream(pathInJar);
-        OutputStream out = new BufferedOutputStream(new FileOutputStream(fileInTempFolder, false));
+        File resource = new File(pathInJar);
+        URL url = ResourceLoader.class.getResource(pathInJar);
+        File f = new File(url.getPath());
 
-        try {
-            copy(is, out);
-        } catch (Exception e) {
-            fileInTempFolder.delete();
-            throw new IOException(e);
+        if (f.isFile()) {
+            File resourceCopiedToTempFolder = new File(mainTempDir, resource.getName());
+            FileUtils.copyFile(f, resourceCopiedToTempFolder);
+            return resourceCopiedToTempFolder;
+        } else {
+            FileUtils.copyDirectory(f, mainTempDir);
+            return mainTempDir;
         }
-
-        setPermissions(fileInTempFolder, filePermissions);
-
-        return fileInTempFolder;
     }
 
     private static void copy(InputStream is, OutputStream out) throws IOException {
@@ -67,8 +73,7 @@ public class ResourceLoader {
         }
     }
 
-    // VisibleForTesting
-    static File createMainTempDirectory() throws IOException {
+    public static File createMainTempDirectory() throws IOException {
         Path path = Files.createTempDirectory("resource-loader");
         File dir = path.toFile();
         dir.mkdir();
@@ -76,7 +81,7 @@ public class ResourceLoader {
         return dir;
     }
 
-    private void setPermissions(File file, Set<PosixFilePermission> filePermissions) throws IOException{
+    private File setPermissions(File file, Set<PosixFilePermission> filePermissions) throws IOException {
         if (isPosixCompliant()) {
             if (filePermissions.isEmpty()) {
                 Set<PosixFilePermission> perms = new HashSet<>();
@@ -99,6 +104,7 @@ public class ResourceLoader {
             file.setReadable(true);
             file.setExecutable(true);
         }
+        return file;
     }
 
     protected void requestDeletion(File file) {

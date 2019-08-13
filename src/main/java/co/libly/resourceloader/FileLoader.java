@@ -9,31 +9,29 @@ import java.util.Set;
 
 public class FileLoader extends ResourceLoader {
 
-    FileLoader(JnaLoader loader) {
-        super(loader);
+    FileLoader() {
+        super();
     }
 
-    public File load(String relativePath, String folderName) {
-        return load(relativePath, folderName, new HashSet<>());
+    public File load(String relativePath) throws IOException {
+        return load(relativePath, null, new HashSet<>());
     }
 
-    public File load(String relativePath, String folderName, Set<PosixFilePermission> permissions) {
+    public File load(String relativePath, String outputFolderName) throws IOException {
+        return load(relativePath, outputFolderName, new HashSet<>());
+    }
+
+    public File load(String relativePath, String outputFolderName, Set<PosixFilePermission> permissions) throws IOException {
         if (loadedFiles.containsKey(relativePath)) {
             return loadedFiles.get(relativePath);
         } else {
-            return loadFromRelativePath(relativePath, folderName, permissions);
+            return loadFromRelativePath(relativePath, outputFolderName, permissions);
         }
     }
 
-    private File loadFromRelativePath(String relativePath, String folderName, Set<PosixFilePermission> filePermissions) {
-        File file = null;
-        try {
-            file = copyFromJarToTemp(relativePath, folderName, filePermissions);
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new UncheckedIOException(e);
-        }
-        return loadedFiles.put(relativePath, file);
+    private File loadFromRelativePath(String relativePath, String folderName, Set<PosixFilePermission> filePermissions) throws IOException {
+        File file = copyFromJarToTemp(relativePath, folderName, filePermissions);
+        return file;
     }
 
 }

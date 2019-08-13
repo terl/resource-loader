@@ -13,8 +13,11 @@ import static java.util.Objects.requireNonNull;
 
 public class SharedLibraryLoader extends ResourceLoader {
 
+    protected final JnaLoader loader;
+
     SharedLibraryLoader(JnaLoader loader) {
-        super(loader);
+        super();
+        this.loader = loader;
     }
 
     public boolean load(List<ResourceLoaderMode> modes, List<Class> classesToBind) {
