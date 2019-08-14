@@ -2,6 +2,9 @@
 
 Resource Loader gives you the functions to load `resource` files easily inside JARs or outside. Resource Loader also supports loading shared libraries.
 
+<a href='https://semaphoreci.com/libly/resource-loader'> <img src='https://semaphoreci.com/api/v1/libly/resource-loader/branches/master/badge.svg' alt='Build Status'></a>
+
+
 ### The problem
 Consider the scenario. You have a project with some files in the `resource` folder. You're loading those files using `getResourceAsStream` and it's working when you test it locally. But when you go to package the project as a JAR and then run it, it fails!
 
