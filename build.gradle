@@ -2,6 +2,7 @@ plugins {
     id 'java-library'
     id 'application'
     id 'idea'
+    id 'com.github.johnrengelman.shadow' version '5.1.0'
 }
 
 ext {
@@ -14,7 +15,7 @@ ext {
 
 group project.ext.groupId
 version = project.ext.version
-mainClassName = "co.libly.resourceloader.ResourceLoader"
+mainClassName = "co.libly.resourceloader.Main"
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
@@ -27,14 +28,31 @@ dependencies {
     testImplementation "org.assertj:assertj-core:3.13.2"
     testImplementation "org.testng:testng:7.0.0-beta7"
     testImplementation group: 'org.mockito', name: 'mockito-core', version: '3.0.0'
-    implementation 'commons-io:commons-io:2.6'
+    implementation group: 'org.reflections', name: 'reflections', version: '0.9.11'
 }
 
+
+sourceSets {
+    main {
+        resources {
+            srcDirs "src/main/resources"
+        }
+    }
+}
 
 test {
     useTestNG()
     scanForTestClasses = false
     testLogging {
         events "passed", "skipped", "failed"
+    }
+}
+
+
+jar {
+    manifest {
+        attributes(
+            'Main-Class': 'co.libly.resourceloader.Main'
+        )
     }
 }

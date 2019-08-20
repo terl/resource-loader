@@ -1,15 +1,16 @@
 package co.libly.resourceloader;
 
 
-import org.apache.commons.io.FileUtils;
-
 import java.io.*;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.channels.FileChannel;
 import java.nio.file.*;
 import java.nio.file.attribute.PosixFilePermission;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 
 /**
@@ -24,7 +25,9 @@ public class ResourceLoader {
     ResourceLoader() {
     }
 
-    public File copyFromJarToTemp(String pathInJar, String folderName, Set<PosixFilePermission> filePermissions) throws IOException {
+    public File copyFromJarToTemp(String pathInJar,
+                                  String folderName,
+                                  Set<PosixFilePermission> filePermissions) throws IOException {
         // If the file does not start with a separator,
         // then let's make sure it does!
         if (!pathInJar.startsWith(File.separator)) {
@@ -45,33 +48,165 @@ public class ResourceLoader {
         // Create the required directories.
         mainTempDir.mkdirs();
 
-        File resource = new File(pathInJar);
-        URL url = ResourceLoader.class.getResource(pathInJar);
-        File f = new File(url.getPath());
+        try {
+            URL jarUrl = getThisJarPath();
+            // Is the user loading this in a JAR?
+            if (jarUrl.toString().endsWith(".jar")) {
+                // If so the get the file/directory
+                // from a JAR
+                return getFileFromJar(jarUrl, mainTempDir, pathInJar);
+            } else {
+                // If not then get the file/directory
+                // straight from the file system
+                return getFileFromFileSystem(pathInJar, mainTempDir);
+            }
+        } catch (URISyntaxException e) {
+            // If we could not convert the jarUrl to a URI
+            // then it means we might not have a JAR,
+            // so we try load from the file system.
+            return getFileFromFileSystem(pathInJar, mainTempDir);
+        }
+    }
 
-        if (f.isFile()) {
+    private File getFileFromJar(URL jarUrl, File mainTempDir, String pathInJar) throws URISyntaxException, IOException {
+        File jar = new File(jarUrl.toURI());
+        unzip(jar.getAbsolutePath(), mainTempDir.getAbsolutePath());
+        String filePath = mainTempDir.getAbsolutePath() + pathInJar;
+        return new File(filePath);
+    }
+
+    private File getFileFromFileSystem(String pathInJar, File mainTempDir) throws IOException {
+        final URL url = ResourceLoader.class.getResource(pathInJar);
+        final String urlString = url.getFile();
+        final File file = new File(urlString);
+
+        if (file.isFile()) {
+            File resource = new File(pathInJar);
             File resourceCopiedToTempFolder = new File(mainTempDir, resource.getName());
-            FileUtils.copyFile(f, resourceCopiedToTempFolder);
+            doCopyFile(file, resourceCopiedToTempFolder);
             return resourceCopiedToTempFolder;
         } else {
-            FileUtils.copyDirectory(f, mainTempDir);
+            copyDirectory(file, mainTempDir);
             return mainTempDir;
         }
     }
 
-    private static void copy(InputStream is, OutputStream out) throws IOException {
-        try {
-            byte[] dest = new byte[4096];
-            int amt = is.read(dest);
-            while (amt != -1) {
-                out.write(dest, 0, amt);
-                amt = is.read(dest);
+    public static void unzip(final String zipFilePath, final String unzipLocation) throws IOException {
+        if (!(Files.exists(Paths.get(unzipLocation)))) {
+            Files.createDirectories(Paths.get(unzipLocation));
+        }
+        try (ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream(zipFilePath))) {
+            ZipEntry entry = zipInputStream.getNextEntry();
+            while (entry != null) {
+                Path filePath = Paths.get(unzipLocation, entry.getName());
+                if (!entry.isDirectory()) {
+                    unzipFiles(zipInputStream, filePath);
+                } else {
+                    Files.createDirectories(filePath);
+                }
+
+                zipInputStream.closeEntry();
+                entry = zipInputStream.getNextEntry();
             }
-        } finally {
-            is.close();
-            out.close();
         }
     }
+
+    public static void unzipFiles(final ZipInputStream zipInputStream, final Path unzipFilePath) throws IOException {
+        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(unzipFilePath.toAbsolutePath().toString()))) {
+            byte[] bytesIn = new byte[1024];
+            int read = 0;
+            while ((read = zipInputStream.read(bytesIn)) != -1) {
+                bos.write(bytesIn, 0, read);
+            }
+        }
+    }
+
+
+    private static final long FILE_COPY_BUFFER_SIZE = 1000000 * 30;
+
+    private static void doCopyFile(final File srcFile, final File destFile)
+            throws IOException {
+        if (destFile.exists() && destFile.isDirectory()) {
+            throw new IOException("Destination '" + destFile + "' exists but is a directory");
+        }
+
+        try (FileInputStream fis = new FileInputStream(srcFile);
+             FileChannel input = fis.getChannel();
+             FileOutputStream fos = new FileOutputStream(destFile);
+             FileChannel output = fos.getChannel()) {
+            final long size = input.size(); // TODO See IO-386
+            long pos = 0;
+            long count = 0;
+            while (pos < size) {
+                final long remain = size - pos;
+                count = remain > FILE_COPY_BUFFER_SIZE ? FILE_COPY_BUFFER_SIZE : remain;
+                final long bytesCopied = output.transferFrom(input, pos, count);
+                if (bytesCopied == 0) { // IO-385 - can happen if file is truncated after caching the size
+                    break; // ensure we don't loop forever
+                }
+                pos += bytesCopied;
+            }
+        }
+
+        final long srcLen = srcFile.length(); // TODO See IO-386
+        final long dstLen = destFile.length(); // TODO See IO-386
+        if (srcLen != dstLen) {
+            throw new IOException("Failed to copy full contents from '" +
+                    srcFile + "' to '" + destFile + "' Expected length: " + srcLen + " Actual: " + dstLen);
+        }
+    }
+
+    public static void copyDirectory(final File srcDir, final File destDir) throws IOException {
+        if (srcDir.getCanonicalPath().equals(destDir.getCanonicalPath())) {
+            throw new IOException("Source '" + srcDir + "' and destination '" + destDir + "' are the same");
+        }
+
+        // Cater for destination being directory within the source directory (see IO-141)
+        List<String> exclusionList = null;
+        if (destDir.getCanonicalPath().startsWith(srcDir.getCanonicalPath())) {
+            final File[] srcFiles = srcDir.listFiles();
+            if (srcFiles != null && srcFiles.length > 0) {
+                exclusionList = new ArrayList<>(srcFiles.length);
+                for (final File srcFile : srcFiles) {
+                    final File copiedFile = new File(destDir, srcFile.getName());
+                    exclusionList.add(copiedFile.getCanonicalPath());
+                }
+            }
+        }
+        doCopyDirectory(srcDir, destDir, exclusionList);
+    }
+
+    private static void doCopyDirectory(final File srcDir, final File destDir, final List<String> exclusionList)
+            throws IOException {
+        // recurse
+        final File[] srcFiles = srcDir.listFiles();
+        if (srcFiles == null) {  // null if abstract pathname does not denote a directory, or if an I/O error occurs
+            throw new IOException("Failed to list contents of " + srcDir);
+        }
+        if (destDir.exists()) {
+            if (destDir.isDirectory() == false) {
+                throw new IOException("Destination '" + destDir + "' exists but is not a directory");
+            }
+        } else {
+            if (!destDir.mkdirs() && !destDir.isDirectory()) {
+                throw new IOException("Destination '" + destDir + "' directory cannot be created");
+            }
+        }
+        if (destDir.canWrite() == false) {
+            throw new IOException("Destination '" + destDir + "' cannot be written to");
+        }
+        for (final File srcFile : srcFiles) {
+            final File dstFile = new File(destDir, srcFile.getName());
+            if (exclusionList == null || !exclusionList.contains(srcFile.getCanonicalPath())) {
+                if (srcFile.isDirectory()) {
+                    doCopyDirectory(srcFile, dstFile, exclusionList);
+                } else {
+                    doCopyFile(srcFile, dstFile);
+                }
+            }
+        }
+    }
+
 
     public static File createMainTempDirectory() throws IOException {
         Path path = Files.createTempDirectory("resource-loader");
@@ -125,5 +260,9 @@ public class ResourceLoader {
         } catch (FileSystemNotFoundException | ProviderNotFoundException | SecurityException e) {
             return false;
         }
+    }
+
+    public URL getThisJarPath() {
+        return getClass().getProtectionDomain().getCodeSource().getLocation();
     }
 }
