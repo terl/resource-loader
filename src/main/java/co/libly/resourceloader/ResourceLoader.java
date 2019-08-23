@@ -22,11 +22,10 @@ public class ResourceLoader {
     protected final Object lock = new Object();
     protected final ConcurrentHashMap<String, File> loadedFiles = new ConcurrentHashMap<>();
 
-    ResourceLoader() {
-    }
+    ResourceLoader() { }
 
     public File copyFromJarToTemp(String pathInJar,
-                                  String folderName,
+                                  String outputFolderName,
                                   Set<PosixFilePermission> filePermissions) throws IOException {
         // If the file does not start with a separator,
         // then let's make sure it does!
@@ -41,8 +40,8 @@ public class ResourceLoader {
         // If the user wants to then put their files
         // in a subfolder, then so be it. Change
         // the main temp folder to be the new sub folder.
-        if (folderName != null && !folderName.isEmpty()) {
-            mainTempDir = new File(mainTempDir, folderName);
+        if (outputFolderName != null && !outputFolderName.isEmpty()) {
+            mainTempDir = new File(mainTempDir, outputFolderName);
         }
 
         // Create the required directories.
@@ -91,7 +90,13 @@ public class ResourceLoader {
         }
     }
 
-    public static void unzip(final String zipFilePath, final String unzipLocation) throws IOException {
+    /**
+     * From https://www.javadevjournal.com/java/zipping-and-unzipping-in-java/
+     * @param zipFilePath An absolute path to a zip file
+     * @param unzipLocation Where to unzip the zip file
+     * @throws IOException If could not unzip
+     */
+    private static void unzip(final String zipFilePath, final String unzipLocation) throws IOException {
         if (!(Files.exists(Paths.get(unzipLocation)))) {
             Files.createDirectories(Paths.get(unzipLocation));
         }
@@ -111,7 +116,7 @@ public class ResourceLoader {
         }
     }
 
-    public static void unzipFiles(final ZipInputStream zipInputStream, final Path unzipFilePath) throws IOException {
+    private static void unzipFiles(final ZipInputStream zipInputStream, final Path unzipFilePath) throws IOException {
         try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(unzipFilePath.toAbsolutePath().toString()))) {
             byte[] bytesIn = new byte[1024];
             int read = 0;
@@ -124,6 +129,12 @@ public class ResourceLoader {
 
     private static final long FILE_COPY_BUFFER_SIZE = 1000000 * 30;
 
+    /**
+     * From Apache Commons
+     * @param srcFile
+     * @param destFile
+     * @throws IOException
+     */
     private static void doCopyFile(final File srcFile, final File destFile)
             throws IOException {
         if (destFile.exists() && destFile.isDirectory()) {
@@ -156,7 +167,13 @@ public class ResourceLoader {
         }
     }
 
-    public static void copyDirectory(final File srcDir, final File destDir) throws IOException {
+    /**
+     * From Apache Commons
+     * @param srcDir
+     * @param destDir
+     * @throws IOException
+     */
+    private static void copyDirectory(final File srcDir, final File destDir) throws IOException {
         if (srcDir.getCanonicalPath().equals(destDir.getCanonicalPath())) {
             throw new IOException("Source '" + srcDir + "' and destination '" + destDir + "' are the same");
         }

@@ -28,6 +28,8 @@ dependencies {
     testImplementation "org.assertj:assertj-core:3.13.2"
     testImplementation "org.testng:testng:7.0.0-beta7"
     testImplementation group: 'org.mockito', name: 'mockito-core', version: '3.0.0'
+    testImplementation group: 'net.java.dev.jna', name: 'jna', version: '5.4.0'
+
     implementation group: 'org.reflections', name: 'reflections', version: '0.9.11'
 }
 
