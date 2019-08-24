@@ -1,15 +1,8 @@
 package co.libly.resourceloader;
 
-import org.mockito.AdditionalMatchers;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
-
 import static org.mockito.Mockito.*;
-import static org.testng.Assert.fail;
 
 public class SharedLibraryTest {
 

@@ -8,7 +8,6 @@ import java.nio.channels.FileChannel;
 import java.nio.file.*;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -19,30 +18,43 @@ import java.util.zip.ZipInputStream;
  */
 public class ResourceLoader {
 
-    protected final Object lock = new Object();
-    protected final ConcurrentHashMap<String, File> loadedFiles = new ConcurrentHashMap<>();
+    private final Collection<PosixFilePermission> writePerms = new ArrayList<>();
+    private final Collection<PosixFilePermission> readPerms = new ArrayList<>();
+    private final Collection<PosixFilePermission> execPerms = new ArrayList<>();
 
-    ResourceLoader() { }
 
-    public File copyFromJarToTemp(String pathInJar,
-                                  String outputFolderName,
-                                  Set<PosixFilePermission> filePermissions) throws IOException {
+    ResourceLoader() {
+        readPerms.add(PosixFilePermission.OWNER_READ);
+        readPerms.add(PosixFilePermission.OTHERS_READ);
+        readPerms.add(PosixFilePermission.GROUP_READ);
+
+        writePerms.add(PosixFilePermission.OWNER_WRITE);
+        writePerms.add(PosixFilePermission.OTHERS_WRITE);
+        writePerms.add(PosixFilePermission.GROUP_WRITE);
+
+        execPerms.add(PosixFilePermission.OWNER_EXECUTE);
+        execPerms.add(PosixFilePermission.OTHERS_EXECUTE);
+        execPerms.add(PosixFilePermission.GROUP_EXECUTE);
+    }
+
+    /**
+     * Copies a file into a temporary directory regardless of
+     * if it is in a JAR or not.
+     * @param relativePath A relative path to a file or directory
+     *                     relative to the resources folder.
+     * @return The file or directory you want to load.
+     * @throws IOException
+     */
+    public File copyToTempDirectory(String relativePath) throws IOException {
         // If the file does not start with a separator,
         // then let's make sure it does!
-        if (!pathInJar.startsWith(File.separator)) {
-            pathInJar = File.separator + pathInJar;
+        if (!relativePath.startsWith(File.separator)) {
+            relativePath = File.separator + relativePath;
         }
 
         // Create a "main" temporary directory in which
         // everything can be thrown in.
         File mainTempDir = createMainTempDirectory();
-
-        // If the user wants to then put their files
-        // in a subfolder, then so be it. Change
-        // the main temp folder to be the new sub folder.
-        if (outputFolderName != null && !outputFolderName.isEmpty()) {
-            mainTempDir = new File(mainTempDir, outputFolderName);
-        }
 
         // Create the required directories.
         mainTempDir.mkdirs();
@@ -53,40 +65,58 @@ public class ResourceLoader {
             if (jarUrl.toString().endsWith(".jar")) {
                 // If so the get the file/directory
                 // from a JAR
-                return getFileFromJar(jarUrl, mainTempDir, pathInJar);
+                return getFileFromJar(jarUrl, mainTempDir, relativePath);
             } else {
                 // If not then get the file/directory
                 // straight from the file system
-                return getFileFromFileSystem(pathInJar, mainTempDir);
+                return getFileFromFileSystem(relativePath, mainTempDir);
             }
         } catch (URISyntaxException e) {
             // If we could not convert the jarUrl to a URI
-            // then it means we might not have a JAR,
+            // then it means we are not in a JAR,
             // so we try load from the file system.
-            return getFileFromFileSystem(pathInJar, mainTempDir);
+            return getFileFromFileSystem(relativePath, mainTempDir);
         }
     }
 
-    private File getFileFromJar(URL jarUrl, File mainTempDir, String pathInJar) throws URISyntaxException, IOException {
+    /**
+     * Unzips a file/directory from a JAR if we're in a JAR. A JAR is simply
+     * a zip file. We can unzip it and get our file successfully.
+     * @param jarUrl This JAR's URL.
+     * @param outputDir A directory of where to store our extracted files.
+     * @param pathInJar A relative path to a file that is in our resources folder.
+     * @return The file or directory that we requested.
+     * @throws URISyntaxException If we could not ascertain our location.
+     * @throws IOException If whilst unzipping we had some problems.
+     */
+    private File getFileFromJar(URL jarUrl, File outputDir, String pathInJar) throws URISyntaxException, IOException {
         File jar = new File(jarUrl.toURI());
-        unzip(jar.getAbsolutePath(), mainTempDir.getAbsolutePath());
-        String filePath = mainTempDir.getAbsolutePath() + pathInJar;
+        unzip(jar.getAbsolutePath(), outputDir.getAbsolutePath());
+        String filePath = outputDir.getAbsolutePath() + pathInJar;
         return new File(filePath);
     }
 
-    private File getFileFromFileSystem(String pathInJar, File mainTempDir) throws IOException {
-        final URL url = ResourceLoader.class.getResource(pathInJar);
+    /**
+     * If we're not in a JAR then we can load directly from the file system
+     * without all the unzipping fiasco present in {@see #getFileFromJar}.
+     * @param relativePath A relative path to a file or directory in the resources folder.
+     * @param outputDir A directory in which to store loaded files. Preferentially a temporary one.
+     * @return The file or directory that was requested.
+     * @throws IOException Could not find your requested file.
+     */
+    private File getFileFromFileSystem(String relativePath, File outputDir) throws IOException {
+        final URL url = ResourceLoader.class.getResource(relativePath);
         final String urlString = url.getFile();
         final File file = new File(urlString);
 
         if (file.isFile()) {
-            File resource = new File(pathInJar);
-            File resourceCopiedToTempFolder = new File(mainTempDir, resource.getName());
+            File resource = new File(relativePath);
+            File resourceCopiedToTempFolder = new File(outputDir, resource.getName());
             doCopyFile(file, resourceCopiedToTempFolder);
             return resourceCopiedToTempFolder;
         } else {
-            copyDirectory(file, mainTempDir);
-            return mainTempDir;
+            copyDirectory(file, outputDir);
+            return outputDir;
         }
     }
 
@@ -94,7 +124,7 @@ public class ResourceLoader {
      * From https://www.javadevjournal.com/java/zipping-and-unzipping-in-java/
      * @param zipFilePath An absolute path to a zip file
      * @param unzipLocation Where to unzip the zip file
-     * @throws IOException If could not unzip
+     * @throws IOException If could not unzip.
      */
     private static void unzip(final String zipFilePath, final String unzipLocation) throws IOException {
         if (!(Files.exists(Paths.get(unzipLocation)))) {
@@ -131,8 +161,8 @@ public class ResourceLoader {
 
     /**
      * From Apache Commons
-     * @param srcFile
-     * @param destFile
+     * @param srcFile The source file
+     * @param destFile The destination file
      * @throws IOException
      */
     private static void doCopyFile(final File srcFile, final File destFile)
@@ -169,8 +199,8 @@ public class ResourceLoader {
 
     /**
      * From Apache Commons
-     * @param srcDir
-     * @param destDir
+     * @param srcDir The source directory
+     * @param destDir The destination directory
      * @throws IOException
      */
     private static void copyDirectory(final File srcDir, final File destDir) throws IOException {
@@ -224,7 +254,11 @@ public class ResourceLoader {
         }
     }
 
-
+    /**
+     * Creates the main temporary directory for resource-loader.
+     * @return A directory that you can store temporary resources in
+     * @throws IOException Could not create a temporary directory
+     */
     public static File createMainTempDirectory() throws IOException {
         Path path = Files.createTempDirectory("resource-loader");
         File dir = path.toFile();
@@ -233,8 +267,30 @@ public class ResourceLoader {
         return dir;
     }
 
-    private File setPermissions(File file, Set<PosixFilePermission> filePermissions) throws IOException {
+    /**
+     * Sets permissions on a file or directory. This allows all users
+     * to read, write and execute.
+     * @see #setPermissions(File, Set)
+     * @param file A file to set global permissions on
+     * @return The file with the global permissions set
+     * @throws IOException Could not set permissions
+     */
+    public File setPermissions(File file) throws IOException {
+        return setPermissions(file, new HashSet<>());
+    }
+
+    /**
+     * Sets a file or directory's permissions. @{code filePermissions} can be null, in that
+     * case then global read, wrote and execute permissions will be set, so use
+     * with caution.
+     * @param file The file to set new permissions on.
+     * @param filePermissions New permissions.
+     * @return The file with correct permissions set.
+     * @throws IOException
+     */
+    public File setPermissions(File file, Set<PosixFilePermission> filePermissions) throws IOException {
         if (isPosixCompliant()) {
+            // For posix set fine grained permissions.
             if (filePermissions.isEmpty()) {
                 Set<PosixFilePermission> perms = new HashSet<>();
                 perms.add(PosixFilePermission.OWNER_READ);
@@ -252,14 +308,25 @@ public class ResourceLoader {
             }
             Files.setPosixFilePermissions(file.toPath(), filePermissions);
         } else {
-            file.setWritable(true);
-            file.setReadable(true);
-            file.setExecutable(true);
+            // For non-posix like Windows find if any are true and
+            // set the permissions accordingly.
+            if (filePermissions.stream().anyMatch(readPerms::contains)) {
+                file.setReadable(true);
+            } else if (filePermissions.stream().anyMatch(writePerms::contains)) {
+                file.setWritable(true);
+            } else {
+                file.setExecutable(true);
+            }
+
         }
         return file;
     }
 
-    protected void requestDeletion(File file) {
+    /**
+     * Mark the file or directory as "to be deleted".
+     * @param file The file or directory to be deleted.
+     */
+    public void requestDeletion(File file) {
         if (isPosixCompliant()) {
             // The file can be deleted immediately after loading
             file.delete();
@@ -269,6 +336,10 @@ public class ResourceLoader {
         }
     }
 
+    /**
+     * Is the system we're running on Posix compliant?
+     * @return True if posix compliant.
+     */
     protected boolean isPosixCompliant() {
         try {
             return FileSystems.getDefault()
@@ -279,6 +350,11 @@ public class ResourceLoader {
         }
     }
 
+    /**
+     * If we're in a JAR, we can get our path
+     * using this method.
+     * @return URL of this JAR.
+     */
     public URL getThisJarPath() {
         return getClass().getProtectionDomain().getCodeSource().getLocation();
     }
