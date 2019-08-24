@@ -19,9 +19,8 @@ public class Main {
 
     public static void main(String[] args) {
         System.out.println("Running Resource Loader.");
-        FileLoader fileLoader = new FileLoader();
         try {
-            File f = fileLoader.load("file1.txt");
+            File f =  FileLoader.get().load("file1.txt");
             if (f.isFile()) {
                 List<String> content = Files.readAllLines(f.toPath(), StandardCharsets.UTF_8);
                 System.out.println(content.get(0));

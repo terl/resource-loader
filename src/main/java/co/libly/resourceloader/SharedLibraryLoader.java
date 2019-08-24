@@ -8,6 +8,8 @@
 
 package co.libly.resourceloader;
 
+import com.sun.jna.Native;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -20,9 +22,18 @@ public class SharedLibraryLoader extends ResourceLoader {
     private final JnaLoader loader;
     private final Object lock = new Object();
 
-    public SharedLibraryLoader(JnaLoader loader) {
+
+    private SharedLibraryLoader(JnaLoader loader) {
         super();
         this.loader = loader;
+    }
+
+    /**
+     * Get an instance of the loader.
+     * @return Returns this loader instantiated.
+     */
+    public static SharedLibraryLoader get() {
+        return SingletonHelper.INSTANCE;
     }
 
     public void loadSystemLibrary(String libraryName, Class clzz) {
@@ -33,11 +44,11 @@ public class SharedLibraryLoader extends ResourceLoader {
         registerLibraryWithClasses(libraryName, classes);
     }
 
-    public File loadBundledLibrary(String relativePath, Class clzz) {
-        return loadBundledLibrary(relativePath, Collections.singletonList(clzz));
+    public File load(String relativePath, Class clzz) {
+        return load(relativePath, Collections.singletonList(clzz));
     }
 
-    public File loadBundledLibrary(String relativePath, List<Class> classes) {
+    public File load(String relativePath, List<Class> classes) {
         synchronized (lock) {
             try {
                 File library = copyToTempDirectory(relativePath);
@@ -71,5 +82,9 @@ public class SharedLibraryLoader extends ResourceLoader {
         }
     }
 
+
+    private static class SingletonHelper {
+        private static final SharedLibraryLoader INSTANCE = new SharedLibraryLoader(Native::register);
+    }
 
 }

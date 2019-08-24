@@ -8,6 +8,7 @@
 
 package co.libly.resourceloader;
 
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -18,11 +19,16 @@ import static org.assertj.core.api.Assertions.*;
 
 public class FileLoaderTest {
 
+    private FileLoader fileLoader;
+
+    @BeforeClass
+    public void loadLoader() {
+        fileLoader = FileLoader.get();
+    }
+
     @Test
     public void loadFile() throws IOException, URISyntaxException {
-        FileLoader fileLoader = new FileLoader();
         File file = fileLoader.load("test1.txt");
-
         assertThat(file)
                 .as("Load a file")
                 .isNotNull();
@@ -30,7 +36,6 @@ public class FileLoaderTest {
 
     @Test
     public void loadFileCheckContents() throws IOException, URISyntaxException {
-        FileLoader fileLoader = new FileLoader();
         File file = fileLoader.load("test1.txt");
 
         assertThat(file)
@@ -40,7 +45,6 @@ public class FileLoaderTest {
 
     @Test
     public void loadWholeFolders() throws IOException, URISyntaxException {
-        FileLoader fileLoader = new FileLoader();
         File file = fileLoader.load("folder2");
 
         assertThat(file)

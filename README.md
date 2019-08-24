@@ -30,8 +30,7 @@ dependencies {
 Let's say you have a file in your `resources` folder called `test1.txt`. To get it you simply do the following:
 
 ```java
-FileLoader fileLoader = new FileLoader();
-File file = fileLoader.load("test1.txt");
+File file = FileLoader.get().load("test1.txt");
 ```
 
 Resource Loader can also load from paths and directories. Just make sure the top level directory name is somewhat unique:
@@ -39,10 +38,25 @@ Resource Loader can also load from paths and directories. Just make sure the top
 ```java
 // The following loads test1.txt from the resources folder
 // even if you supply a nested path.
-File file2 = fileLoader.load("a_unique_top_level_folder/path/test1.txt");
+File file2 = FileLoader.get().load("a_unique_top_level_folder/path/test1.txt");
 
 // You can even load whole directories.
-File dir = fileLoader.load("a_unique_top_level_folder/directory"); 
+File dir = FileLoader.get().load("a_unique_top_level_folder/directory"); 
+```
+
+### Loading a shared library
+Loading a shared library is just as simple. You can load one by using `loadSystemLibrary` which loads a shared library if it is already installed on the system.
+
+```java
+// Load from the system
+SharedLibraryLoader.get().loadSystemLibrary("hydrogen", Hydrogen.class);
+```
+
+Or you can use `load` which loads a shared library even if it is bundled inside a JAR or not.
+
+```java
+// Load from the system
+SharedLibraryLoader.get().load("hydrogen", Hydrogen.class);
 ```
 
 ## What problem does Resource Loader solve?

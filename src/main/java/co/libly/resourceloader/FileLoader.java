@@ -16,9 +16,18 @@ import java.util.Set;
 
 public class FileLoader extends ResourceLoader {
 
-    FileLoader() {
+    private FileLoader() {
         super();
     }
+
+    /**
+     * Get an instance of the loader.
+     * @return Returns this loader instantiated.
+     */
+    public static FileLoader get() {
+        return SingletonHelper.INSTANCE;
+    }
+
 
     /**
      * Load a file/directory from your resource folder using a relative path.
@@ -50,4 +59,7 @@ public class FileLoader extends ResourceLoader {
         return file;
     }
 
+    private static class SingletonHelper {
+        private static final FileLoader INSTANCE = new FileLoader();
+    }
 }
