@@ -13,6 +13,9 @@ import net.jodah.concurrentunit.Waiter;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 public class SharedLibraryTest {
@@ -31,18 +34,22 @@ public class SharedLibraryTest {
         String relativePath = getLibraryPath();
         final Waiter waiter = new Waiter();
 
-        new Thread(() -> {
+        ExecutorService service = Executors.newFixedThreadPool(2);
+        service.submit(() -> {
             libLoader.load(relativePath, Sodium.class);
             if (verifyLoaded()) {
                 waiter.resume();
             }
-        }).start();
-        new Thread(() -> {
+        });
+        service.submit(() -> {
             libLoader.load(relativePath, Sodium.class);
             if (verifyLoaded()) {
                 waiter.resume();
             }
-        }).start();
+        });
+
+        service.shutdown();
+        service.awaitTermination(1, TimeUnit.MINUTES);
 
         // Wait for resume() to be called twice
         waiter.await(2000, 2);
