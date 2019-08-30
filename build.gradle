@@ -16,7 +16,7 @@ plugins {
 ext {
     artifactId = "resource-loader"
     groupId = "co.libly"
-    version = '1.2.0'
+    version = '1.2.1'
     description = "Resource Loader gives you the functions to load resource files inside or outside JARs."
 }
 
