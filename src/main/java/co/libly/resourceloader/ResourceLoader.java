@@ -53,7 +53,7 @@ public class ResourceLoader {
      * @return The file or directory you want to load.
      * @throws IOException
      */
-    public File copyToTempDirectory(String relativePath) throws IOException {
+    public File copyToTempDirectory(String relativePath, Class outsideClass) throws IOException {
         // If the file does not start with a separator,
         // then let's make sure it does!
         if (!relativePath.startsWith(File.separator)) {
@@ -68,7 +68,7 @@ public class ResourceLoader {
         mainTempDir.mkdirs();
 
         try {
-            URL jarUrl = getThisJarPath();
+            URL jarUrl = getThisJarPath(outsideClass);
             // Is the user loading this in a JAR?
             if (jarUrl.toString().endsWith(".jar")) {
                 // If so the get the file/directory
@@ -363,7 +363,7 @@ public class ResourceLoader {
      * using this method.
      * @return URL of this JAR.
      */
-    public URL getThisJarPath() {
-        return ResourceLoader.class.getProtectionDomain().getCodeSource().getLocation();
+    public URL getThisJarPath(Class outsideClass) {
+        return outsideClass.getProtectionDomain().getCodeSource().getLocation();
     }
 }

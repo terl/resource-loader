@@ -49,7 +49,7 @@ public class SharedLibraryLoader extends ResourceLoader {
     public File load(String relativePath, List<Class> classes) {
         synchronized (lock) {
             try {
-                File library = copyToTempDirectory(relativePath);
+                File library = copyToTempDirectory(relativePath, classes.get(0));
                 setPermissions(library);
                 if (library.isDirectory()) {
                     throw new IOException("Please supply a relative path to a file and not a directory.");

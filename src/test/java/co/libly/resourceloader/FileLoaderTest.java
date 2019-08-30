@@ -27,7 +27,7 @@ public class FileLoaderTest {
 
     @Test
     public void loadFile() throws IOException {
-        File file = fileLoader.load("test1.txt");
+        File file = fileLoader.load("test1.txt", FileLoaderTest.class);
         assertThat(file)
                 .as("Load a file")
                 .isNotNull();
@@ -35,7 +35,7 @@ public class FileLoaderTest {
 
     @Test
     public void loadFileCheckContents() throws IOException {
-        File file = fileLoader.load("test1.txt");
+        File file = fileLoader.load("test1.txt", FileLoaderTest.class);
 
         assertThat(file)
                 .as("Load a file testing the content")
@@ -44,7 +44,7 @@ public class FileLoaderTest {
 
     @Test
     public void loadWholeFolders() throws IOException {
-        File file = fileLoader.load("folder2");
+        File file = fileLoader.load("folder2", FileLoaderTest.class);
 
         assertThat(file)
                 .as("Load a directory with children")
