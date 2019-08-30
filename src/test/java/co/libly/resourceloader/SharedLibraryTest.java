@@ -47,7 +47,6 @@ public class SharedLibraryTest {
                 waiter.resume();
             }
         });
-
         service.shutdown();
         service.awaitTermination(1, TimeUnit.MINUTES);
 

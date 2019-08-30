@@ -36,8 +36,8 @@ public class FileLoader extends ResourceLoader {
      * @return The file your directory.
      * @throws IOException
      */
-    public File load(String relativePath) throws IOException {
-        return load(relativePath, new HashSet<>());
+    public File load(String relativePath, Class aClass) throws IOException {
+        return load(relativePath, new HashSet<>(), aClass);
     }
 
     /**
@@ -49,12 +49,12 @@ public class FileLoader extends ResourceLoader {
      * @return The file your directory.
      * @throws IOException
      */
-    public File load(String relativePath, Set<PosixFilePermission> permissions) throws IOException {
-        return loadFromRelativePath(relativePath, permissions);
+    public File load(String relativePath, Set<PosixFilePermission> permissions, Class aClass) throws IOException {
+        return loadFromRelativePath(relativePath, permissions, aClass);
     }
 
-    private File loadFromRelativePath(String relativePath, Set<PosixFilePermission> filePermissions) throws IOException {
-        File file = copyToTempDirectory(relativePath);
+    private File loadFromRelativePath(String relativePath, Set<PosixFilePermission> filePermissions, Class aClass) throws IOException {
+        File file = copyToTempDirectory(relativePath, aClass);
         setPermissions(file, filePermissions);
         return file;
     }
