@@ -364,6 +364,6 @@ public class ResourceLoader {
      * @return URL of this JAR.
      */
     public URL getThisJarPath() {
-        return getClass().getProtectionDomain().getCodeSource().getLocation();
+        return ResourceLoader.class.getProtectionDomain().getCodeSource().getLocation();
     }
 }

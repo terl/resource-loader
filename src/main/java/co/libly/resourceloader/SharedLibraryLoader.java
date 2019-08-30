@@ -19,13 +19,11 @@ import static java.util.Objects.requireNonNull;
 
 public class SharedLibraryLoader extends ResourceLoader {
 
-    private final JnaLoader loader;
     private final Object lock = new Object();
 
 
-    private SharedLibraryLoader(JnaLoader loader) {
+    private SharedLibraryLoader() {
         super();
-        this.loader = loader;
     }
 
     /**
@@ -74,7 +72,7 @@ public class SharedLibraryLoader extends ResourceLoader {
         synchronized (lock) {
             try {
                 for (Class clzz : classes) {
-                    loader.register(clzz, absolutePath);
+                    Native.register(clzz, absolutePath);
                 }
             } catch (UnsatisfiedLinkError e) {
                 throw new ResourceLoaderException("Failed to load the library using " + absolutePath, e);
@@ -84,7 +82,7 @@ public class SharedLibraryLoader extends ResourceLoader {
 
 
     private static class SingletonHelper {
-        private static final SharedLibraryLoader INSTANCE = new SharedLibraryLoader(Native::register);
+        private static final SharedLibraryLoader INSTANCE = new SharedLibraryLoader();
     }
 
 }
