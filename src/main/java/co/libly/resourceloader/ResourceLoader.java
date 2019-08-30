@@ -50,11 +50,10 @@ public class ResourceLoader {
      * if it is in a JAR or not.
      * @param relativePath A relative path to a file or directory
      *                     relative to the resources folder.
-     * @param aClass
      * @return The file or directory you want to load.
      * @throws IOException
      */
-    public File copyToTempDirectory(String relativePath, Class aClass) throws IOException {
+    public File copyToTempDirectory(String relativePath) throws IOException {
         // If the file does not start with a separator,
         // then let's make sure it does!
         if (!relativePath.startsWith(File.separator)) {
@@ -69,7 +68,7 @@ public class ResourceLoader {
         mainTempDir.mkdirs();
 
         try {
-            URL jarUrl = getThisJarPath(aClass);
+            URL jarUrl = getThisJarPath();
             // Is the user loading this in a JAR?
             if (jarUrl.toString().endsWith(".jar")) {
                 // If so the get the file/directory
@@ -363,9 +362,8 @@ public class ResourceLoader {
      * If we're in a JAR, we can get our path
      * using this method.
      * @return URL of this JAR.
-     * @param aClass
      */
-    public URL getThisJarPath(Class aClass) {
-        return aClass.getProtectionDomain().getCodeSource().getLocation();
+    public URL getThisJarPath() {
+        return getClass().getProtectionDomain().getCodeSource().getLocation();
     }
 }
