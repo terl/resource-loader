@@ -16,7 +16,7 @@ plugins {
 ext {
     artifactId = "resource-loader"
     groupId = "co.libly"
-    version = '1.2.1'
+    version = '1.2.2'
     description = "Resource Loader gives you the functions to load resource files inside or outside JARs."
 }
 
@@ -40,14 +40,6 @@ dependencies {
     implementation group: 'net.java.dev.jna', name: 'jna', version: '5.4.0'
 }
 
-
-sourceSets {
-    main {
-        resources {
-            srcDirs "src/main/resources"
-        }
-    }
-}
 
 test {
     useTestNG()

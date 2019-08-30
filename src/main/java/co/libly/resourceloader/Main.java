@@ -8,26 +8,11 @@
 
 package co.libly.resourceloader;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.util.List;
-
 public class Main {
 
 
     public static void main(String[] args) {
         System.out.println("Running Resource Loader.");
-        try {
-            File f =  FileLoader.get().load("file1.txt", Main.class);
-            if (f.isFile()) {
-                List<String> content = Files.readAllLines(f.toPath(), StandardCharsets.UTF_8);
-                System.out.println(content.get(0));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
 
