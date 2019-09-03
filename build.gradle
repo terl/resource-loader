@@ -44,6 +44,9 @@ dependencies {
     implementation group: 'net.java.dev.jna', name: 'jna', version: '5.4.0'
 }
 
+def Properties properties = new Properties()
+properties.load(project.rootProject.file("local.properties").newDataInputStream())
+
 
 test {
     useTestNG()
@@ -151,14 +154,14 @@ publishing {
 
 
 bintray {
-    user = findProperty("bintray.user")
-    key = findProperty("bintray.apiKey")
+    user = properties.getProperty("bintray.user")
+    key = properties.getProperty("bintray.apiKey")
     publications = ['mavenJava']
     publish = true
     pkg {
-        repo = 'lazysodium-maven'
+        repo = 'maven'
         name = project.ext.artifactId
-        userOrg = 'terl'
+        userOrg = 'libly'
         desc = project.ext.description
         licenses = ['MPL-2.0']
         issueTrackerUrl = "https://github.com/libly/resource-loader/issues"

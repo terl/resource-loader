@@ -14,12 +14,12 @@ Resource Loader is only available via Jitpack at the moment. Maven and SBT insta
 // Top-level build.gradle
 repositories {
     // ...
-    maven { url 'https://jitpack.io' } // Add this line
+    maven { url "https://dl.bintray.com/libly/maven" } // Add this line
 }
 
 dependencies {
     // ...
-    implementation 'com.github.libly:resource-loader:1.1.3' // Add this line
+    implementation 'co.libly:resource-loader:1.3.4' // Add this line
 }
 ```
 
