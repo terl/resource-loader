@@ -120,3 +120,5 @@ $RECYCLE.BIN/
 !gradle/wrapper/*
 .gradle/
 build/
+
+local.properties

@@ -11,6 +11,10 @@ plugins {
     id 'application'
     id 'idea'
     id 'com.github.johnrengelman.shadow' version '5.1.0'
+    id 'signing'
+    id 'maven'
+    id 'maven-publish'
+    id "com.jfrog.bintray" version "1.8.4"
 }
 
 ext {
@@ -55,5 +59,150 @@ jar {
         attributes(
             'Main-Class': 'co.libly.resourceloader.Main'
         )
+    }
+}
+
+
+
+// Tasks
+signing {
+    // This will use the GPG Agent
+    // to sign the jar
+    useGpgCmd()
+    sign configurations.archives
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+
+task signPom(type: Sign) {
+    sign project.file("$buildDir/publications/mavenJava/pom-default.xml")
+
+    // The signing plugin does not seem to notice
+    // it when the publications folder with the
+    // signature has been deleted. So we always
+    // create a new signature
+    outputs.upToDateWhen { false }
+}
+
+
+artifacts {
+    archives sourcesJar, javadocJar
+}
+
+
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            groupId project.ext.groupId
+            artifactId project.ext.artifactId
+            version project.ext.version
+            artifact sourcesJar
+            artifact javadocJar
+
+
+            project.tasks.withType(Sign) {
+                signatures.all {
+                    def type = it.type
+                    if (it.file.name.endsWith('.tar.gz.asc')) {
+                        // Workaround in case a tar.gz file should published
+                        type = 'tar.gz.asc'
+                    } else if (it.type.equals('xml.asc')) {
+                        // Set correct extension for signature of pom file
+                        type = 'pom.asc'
+                    }
+                    artifact source: it.file, classifier: it.classifier ?: null, extension: type
+                }
+            }
+
+            pom.withXml {
+                def root = asNode()
+                root.appendNode('description', project.ext.description)
+                root.appendNode('name', project.ext.artifactId)
+                root.appendNode('url', 'https://github.com/libly/resource-loader')
+
+                def scm = root.appendNode('scm')
+                scm.appendNode("connection", "scm:git:git://github.com/libly/resource-loader.git")
+                scm.appendNode("developerConnection", "scm:git:ssh://github.com/libly/resource-loader")
+                scm.appendNode("url", "http://github.com/libly/resource-loader")
+
+                def license = root.appendNode('licenses').appendNode('license')
+                license.appendNode('name', 'MIT')
+                license.appendNode('url', 'https://opensource.org/licenses/MIT')
+                license.appendNode('distribution', 'repo')
+
+                def developer = root.appendNode('developers').appendNode('developer')
+                developer.appendNode('name', 'Libly')
+                developer.appendNode('email', 'hello@libly.co')
+            }
+        }
+    }
+}
+
+
+bintray {
+    user = findProperty("bintray.user")
+    key = findProperty("bintray.apiKey")
+    publications = ['mavenJava']
+    publish = true
+    pkg {
+        repo = 'lazysodium-maven'
+        name = project.ext.artifactId
+        userOrg = 'terl'
+        desc = project.ext.description
+        licenses = ['MPL-2.0']
+        issueTrackerUrl = "https://github.com/libly/resource-loader/issues"
+        vcsUrl = 'https://github.com/libly/resource-loader.git'
+
+        version {
+            name = project.ext.version
+            released = new java.util.Date()
+            vcsTag = project.ext.version
+        }
+    }
+}
+
+
+model {
+    tasks.publishMavenJavaPublicationToMavenLocal {
+        dependsOn project.tasks.withType(Sign)
+    }
+    tasks.signPom {
+        dependsOn tasks.generatePomFileForMavenJavaPublication
+    }
+}
+
+tasks.withType(Test) {
+    // a collection to track failedTests
+    ext.failedTests = []
+
+    afterTest { descriptor, result ->
+        if (result.resultType == TestResult.ResultType.FAILURE) {
+            String failedTest = "${descriptor.className}::${descriptor.name}"
+            logger.debug("Adding " + failedTest + " to failedTests...")
+            failedTests << [failedTest]
+        }
+    }
+
+    afterSuite { suite, result ->
+        if (!suite.parent) { // will match the outermost suite
+            // logs each failed test
+            if (!failedTests.empty) {
+                logger.lifecycle("Failed tests:")
+                failedTests.each { failedTest ->
+                    logger.lifecycle("${failedTest}")
+                }
+            }
+        }
     }
 }
