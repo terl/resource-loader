@@ -44,8 +44,11 @@ dependencies {
     implementation group: 'net.java.dev.jna', name: 'jna', version: '5.4.0'
 }
 
-def Properties properties = new Properties()
-properties.load(project.rootProject.file("local.properties").newDataInputStream())
+Properties properties = new Properties()
+File propertiesFile = project.rootProject.file("local.properties")
+if (propertiesFile != null) {
+    properties.load(propertiesFile.newDataInputStream())
+}
 
 
 test {
