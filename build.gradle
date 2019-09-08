@@ -44,12 +44,6 @@ dependencies {
     implementation group: 'net.java.dev.jna', name: 'jna', version: '5.4.0'
 }
 
-Properties properties = new Properties()
-File propertiesFile = project.rootProject.file("local.properties")
-if (propertiesFile != null) {
-    properties.load(propertiesFile.newDataInputStream())
-}
-
 
 test {
     useTestNG()
@@ -157,8 +151,8 @@ publishing {
 
 
 bintray {
-    user = properties.getProperty("bintray.user")
-    key = properties.getProperty("bintray.apiKey")
+    user = findProperty("bintray.user")
+    key = findProperty("bintray.apiKey")
     publications = ['mavenJava']
     publish = true
     pkg {
