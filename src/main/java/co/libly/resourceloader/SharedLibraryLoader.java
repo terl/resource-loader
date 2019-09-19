@@ -70,12 +70,8 @@ public class SharedLibraryLoader extends ResourceLoader {
     private void registerLibraryWithClasses(String absolutePath, List<Class> classes) {
         requireNonNull(absolutePath, "Please supply an absolute path.");
         synchronized (lock) {
-            try {
-                for (Class clzz : classes) {
-                    Native.register(clzz, absolutePath);
-                }
-            } catch (UnsatisfiedLinkError e) {
-                throw new ResourceLoaderException("Failed to load the library using " + absolutePath, e);
+            for (Class clzz : classes) {
+                Native.register(clzz, absolutePath);
             }
         }
     }
