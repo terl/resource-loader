@@ -146,6 +146,7 @@ public class ResourceLoader {
             while (entry != null) {
                 Path filePath = Paths.get(unzipLocation, entry.getName());
                 if (!entry.isDirectory()) {
+                    filePath.getParent().toFile().mkdirs();
                     unzipFiles(zipInputStream, filePath);
                 } else {
                     Files.createDirectories(filePath);
