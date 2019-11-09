@@ -1,3 +1,7 @@
+
+<img width="130" style="display: inline;" src="https://filedn.com/lssh2fV92SE8dRT5CWJvvSy/libly/resource-loader.png" />
+
+
 # Resource Loader
 
 Resource Loader gives you the functions to load `resource` files even if you are loading from inside a JARs or outside a JAR. Resource Loader also supports loading shared libraries through `SharedLibraryLoader`.
