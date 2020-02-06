@@ -19,6 +19,8 @@ import java.nio.channels.FileChannel;
 import java.nio.file.*;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.*;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -70,24 +72,37 @@ public class ResourceLoader {
         // Create the required directories.
         mainTempDir.mkdirs();
 
-        try {
-            URL jarUrl = getThisJarPath(outsideClass);
-            // Is the user loading this in a JAR?
-            if (jarUrl.toString().endsWith(".jar")) {
-                // If so the get the file/directory
-                // from a JAR
+        // Is the user loading this in a JAR?
+        URL jarUrl = getThisJarPath(outsideClass);
+        if (isJarFile(jarUrl)) {
+            // If so the get the file/directory
+            // from a JAR
+            try {
                 return getFileFromJar(jarUrl, mainTempDir, relativePath);
-            } else {
-                // If not then get the file/directory
-                // straight from the file system
-                return getFileFromFileSystem(relativePath, mainTempDir);
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
             }
-        } catch (URISyntaxException e) {
-            // If we could not convert the jarUrl to a URI
-            // then it means we are not in a JAR,
-            // so we try load from the file system.
-            return getFileFromFileSystem(relativePath, mainTempDir);
         }
+
+        // If not then get the file/directory
+        // straight from the file system
+        return getFileFromFileSystem(relativePath, mainTempDir);
+    }
+
+    private boolean isJarFile(URL jarUrl) {
+        if (jarUrl != null) {
+            try (JarFile jarFile = new JarFile(jarUrl.getPath())) {
+                // Successfully opened the jar file. Check if there's a manifest
+                // This is probably not necessary
+                Manifest manifest = jarFile.getManifest();
+                if (manifest != null) {
+                    return true;
+                }
+            } catch (IOException | SecurityException | IllegalStateException e) {
+                System.out.println("Exception getting JarFile object: " + e.getMessage());
+            }
+        }
+        return false;
     }
 
     /**
