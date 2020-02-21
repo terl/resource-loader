@@ -61,8 +61,8 @@ public class ResourceLoader {
     public File copyToTempDirectory(String relativePath, Class outsideClass) throws IOException {
         // If the file does not start with a separator,
         // then let's make sure it does!
-        if (!relativePath.startsWith(File.separator)) {
-            relativePath = File.separator + relativePath;
+        if (!relativePath.startsWith("/")) {
+            relativePath = "/" + relativePath;
         }
 
         // Create a "main" temporary directory in which
