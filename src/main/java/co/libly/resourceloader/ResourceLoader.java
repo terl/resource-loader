@@ -80,7 +80,8 @@ public class ResourceLoader {
             try {
                 return getFileFromJar(jarUrl, mainTempDir, relativePath);
             } catch (URISyntaxException e) {
-                e.printStackTrace();
+                // Do not print a stacktrace here!
+                // e.printStackTrace();
             }
         }
 
