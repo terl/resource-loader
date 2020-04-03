@@ -23,7 +23,7 @@ repositories {
 
 dependencies {
     // ...
-    implementation 'co.libly:resource-loader:1.3.6' // Add this line
+    implementation 'co.libly:resource-loader:1.3.7' // Add this line
 }
 ```
 
