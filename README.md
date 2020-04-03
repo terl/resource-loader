@@ -12,14 +12,13 @@ Resource Loader gives you the functions to load `resource` files even if you are
 
 ## Installation
 
-Resource Loader is only available via Jitpack at the moment. Maven and SBT installation instructions available [here](https://jitpack.io/).
+This is how to install the library in Gradle based projects. Maven based projects may differ.
 
 ```groovy
 // Top-level build.gradle
 repositories {
     // ...
-    mavenCentral()
-    maven { url "https://dl.bintray.com/libly/maven" } // Add this line
+    jcenter()
 }
 
 dependencies {
