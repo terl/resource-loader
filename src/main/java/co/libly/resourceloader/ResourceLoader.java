@@ -56,9 +56,10 @@ public class ResourceLoader {
      * @param relativePath A relative path to a file or directory
      *                     relative to the resources folder.
      * @return The file or directory you want to load.
-     * @throws IOException
+     * @throws IOException If at any point processing of the resource file fails.
+     * @throws URISyntaxException If cannot find the resource file.
      */
-    public File copyToTempDirectory(String relativePath, Class outsideClass) throws IOException {
+    public File copyToTempDirectory(String relativePath, Class outsideClass) throws IOException, URISyntaxException {
         // If the file does not start with a separator,
         // then let's make sure it does!
         if (!relativePath.startsWith("/")) {
@@ -131,10 +132,15 @@ public class ResourceLoader {
      * @return The file or directory that was requested.
      * @throws IOException Could not find your requested file.
      */
-    private File getFileFromFileSystem(String relativePath, File outputDir) throws IOException {
+    private File getFileFromFileSystem(String relativePath, File outputDir) throws IOException, URISyntaxException {
         final URL url = ResourceLoader.class.getResource(relativePath);
         final String urlString = url.getFile();
-        final File file = new File(urlString);
+        final File file;
+        if (Platform.isWindows()) {
+            file = Paths.get(url.toURI()).toFile();
+        } else {
+            file = new File(urlString);
+        }
 
         if (file.isFile()) {
             File resource = new File(relativePath);

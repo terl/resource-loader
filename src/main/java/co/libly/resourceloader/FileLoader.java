@@ -10,6 +10,7 @@ package co.libly.resourceloader;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.HashSet;
 import java.util.Set;
@@ -34,9 +35,10 @@ public class FileLoader extends ResourceLoader {
      * This will return your file or directory with global read, write and execute.
      * @param relativePath Relative path to your file or directory.
      * @return The file your directory.
-     * @throws IOException
+     * @throws IOException If at any point processing of the resource file fails.
+     * @throws URISyntaxException If cannot find the resource file.
      */
-    public File load(String relativePath, Class outsideClass) throws IOException {
+    public File load(String relativePath, Class outsideClass) throws IOException, URISyntaxException {
         return load(relativePath, new HashSet<>(), outsideClass);
     }
 
@@ -47,13 +49,16 @@ public class FileLoader extends ResourceLoader {
      * @param relativePath Relative path to your file or directory.
      * @param permissions A set of permissions.
      * @return The file your directory.
-     * @throws IOException
+     * @throws IOException If at any point processing of the resource file fails.
+     * @throws URISyntaxException If cannot find the resource file.
      */
-    public File load(String relativePath, Set<PosixFilePermission> permissions, Class outsideClass) throws IOException {
+    public File load(String relativePath, Set<PosixFilePermission> permissions, Class outsideClass)
+            throws IOException, URISyntaxException {
         return loadFromRelativePath(relativePath, permissions, outsideClass);
     }
 
-    private File loadFromRelativePath(String relativePath, Set<PosixFilePermission> filePermissions, Class outsideClass) throws IOException {
+    private File loadFromRelativePath(String relativePath, Set<PosixFilePermission> filePermissions, Class outsideClass)
+            throws IOException, URISyntaxException {
         File file = copyToTempDirectory(relativePath, outsideClass);
         setPermissions(file, filePermissions);
         return file;

@@ -26,7 +26,7 @@ public class FileLoaderTest {
     }
 
     @Test
-    public void loadFile() throws IOException {
+    public void loadFile() throws Exception {
         File file = fileLoader.load("test1.txt", FileLoaderTest.class);
         assertThat(file)
                 .as("Load a file")
@@ -34,7 +34,7 @@ public class FileLoaderTest {
     }
 
     @Test
-    public void loadFileCheckContents() throws IOException {
+    public void loadFileCheckContents() throws Exception {
         File file = fileLoader.load("test1.txt", FileLoaderTest.class);
 
         assertThat(file)
@@ -43,7 +43,7 @@ public class FileLoaderTest {
     }
 
     @Test
-    public void loadWholeFolders() throws IOException {
+    public void loadWholeFolders() throws Exception {
         File file = fileLoader.load("folder2", FileLoaderTest.class);
 
         assertThat(file)

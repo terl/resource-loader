@@ -18,7 +18,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class SharedLibraryTest {
+public class SharedLibraryLoaderTest {
 
 
     @Test

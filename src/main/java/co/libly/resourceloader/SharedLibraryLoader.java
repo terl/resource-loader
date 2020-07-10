@@ -12,6 +12,7 @@ import com.sun.jna.Native;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 
@@ -60,6 +61,12 @@ public class SharedLibraryLoader extends ResourceLoader {
             } catch (IOException e) {
                 String message = String.format(
                         "Failed to load the bundled library from resources by relative path (%s)",
+                        relativePath
+                );
+                throw new ResourceLoaderException(message, e);
+            } catch (URISyntaxException e) {
+                String message = String.format(
+                        "Finding the library from path (%s) failed!",
                         relativePath
                 );
                 throw new ResourceLoaderException(message, e);
