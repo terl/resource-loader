@@ -6,8 +6,7 @@
 
 Resource Loader gives you the functions to load `resource` files even if you are loading from inside a JARs or outside a JAR. Resource Loader also supports loading shared libraries through `SharedLibraryLoader`.
 
-<a href='https://semaphoreci.com/libly/resource-loader'> <img src='https://semaphoreci.com/api/v1/libly/resource-loader/branches/master/badge.svg' alt='Build Status'></a>
-
+[![Build Status](https://dev.azure.com/gurpreetishere/Lazysodium/_apis/build/status/libly.resource-loader?branchName=master)](https://dev.azure.com/gurpreetishere/Lazysodium/_build/latest?definitionId=2&branchName=master)
 
 
 ## Installation
