@@ -10,6 +10,8 @@ package co.libly.resourceloader;
 
 
 import com.sun.jna.Platform;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -31,10 +33,11 @@ import java.util.zip.ZipInputStream;
  */
 public class ResourceLoader {
 
+    private final Logger logger = LoggerFactory.getLogger("ResourceLoader");
+
     private final Collection<PosixFilePermission> writePerms = new ArrayList<>();
     private final Collection<PosixFilePermission> readPerms = new ArrayList<>();
     private final Collection<PosixFilePermission> execPerms = new ArrayList<>();
-
 
     ResourceLoader() {
         readPerms.add(PosixFilePermission.OWNER_READ);
@@ -100,8 +103,8 @@ public class ResourceLoader {
                 if (manifest != null) {
                     return true;
                 }
-            } catch (IOException | SecurityException | IllegalStateException e) {
-                System.out.println("Exception getting JarFile object: " + e.getMessage());
+            } catch (IOException | IllegalStateException | SecurityException e) {
+                logger.debug("This is not a JAR file due to {}", e.getMessage());
             }
         }
         return false;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Libly - Terl Tech Ltd  • 24/08/2019, 16:01 • libly.co, goterl.com
+ * Copyright (c) Libly - Terl Tech Ltd  • 10/07/2020, 23:32 • libly.co, goterl.com
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v2.0. If a copy of the MPL was not distributed with this
