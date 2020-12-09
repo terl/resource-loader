@@ -76,8 +76,15 @@ public class ResourceLoader {
         // Create the required directories.
         mainTempDir.mkdirs();
 
+
         // Is the user loading this in a JAR?
         URL jarUrl = getThisJarPath(outsideClass);
+
+        if (jarUrl.toString().startsWith("jar")) {
+            String[] jarinjar = jarUrl.toString().split("!");
+            jarUrl = doubleExtract(jarinjar);
+        }
+
         if (isJarFile(jarUrl)) {
             // If so the get the file/directory
             // from a JAR
@@ -92,6 +99,17 @@ public class ResourceLoader {
         // If not then get the file/directory
         // straight from the file system
         return getFileFromFileSystem(relativePath, mainTempDir);
+    }
+
+    public URL doubleExtract(String[] jarinjar) throws IOException, URISyntaxException {
+        URL outerJar = new URL(jarinjar[0] + "!/");
+        String innerJar = jarinjar[1];
+
+        File tempDir = createMainTempDirectory();
+        tempDir.mkdirs();
+
+        File innerJarFile = getFileFromJar(outerJar, tempDir,innerJar);
+        return innerJarFile.toURI().toURL();
     }
 
     private boolean isJarFile(URL jarUrl) {
