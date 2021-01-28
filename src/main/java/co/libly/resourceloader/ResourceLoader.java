@@ -425,43 +425,46 @@ public class ResourceLoader {
     public static URL getThisJarPath(final Class<?> c) {
         if (c == null) return null; // could not load the class
 
-        // try the easy way first
+        // Try the easy way first
         try {
             final URL codeSourceLocation =
                     c.getProtectionDomain().getCodeSource().getLocation();
-            if (codeSourceLocation != null) return codeSourceLocation;
-        }
-        catch (final SecurityException e) {
-            // NB: Cannot access protection domain.
-        }
-        catch (final NullPointerException e) {
-            // NB: Protection domain or code source is null.
+            if (codeSourceLocation != null) {
+                return codeSourceLocation;
+            }
+        } catch (final SecurityException e) {
+            // Cannot access protection domain.
+        } catch (final NullPointerException e) {
+            // Protection domain or code source is null.
         }
 
-        // NB: The easy way failed, so we try the hard way. We ask for the class
+        // The easy way failed, so we try the hard way. We ask for the class
         // itself as a resource, then strip the class's path from the URL string,
         // leaving the base path.
 
-        // get the class's raw resource path
+        // Get the class' raw resource path
         final URL classResource = c.getResource(c.getSimpleName() + ".class");
-        if (classResource == null) return null; // cannot find class resource
+        if (classResource == null) {
+            return null; // cannot find class resource
+        }
 
         final String url = classResource.toString();
         final String suffix = c.getCanonicalName().replace('.', '/') + ".class";
-        if (!url.endsWith(suffix)) return null; // weird URL
+        if (!url.endsWith(suffix)) {
+            return null; // weird URL
+        }
 
-        // strip the class's path from the URL string
-        final String base = url.substring(0, url.length() - suffix.length());
+        // Strip the class's path from the URL string
+        String path = url.substring(0, url.length() - suffix.length());
 
-        String path = base;
-
-        // remove the "jar:" prefix and "!/" suffix, if present
-        if (path.startsWith("jar:")) path = path.substring(4, path.length() - 2);
+        // Remove the "jar:" prefix and "!/" suffix, if present
+        if (path.startsWith("jar:")) {
+            path = path.substring(4, path.length() - 2);
+        }
 
         try {
             return new URL(path);
-        }
-        catch (final MalformedURLException e) {
+        } catch (final MalformedURLException e) {
             e.printStackTrace();
             return null;
         }
