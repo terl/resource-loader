@@ -8,7 +8,7 @@
 
 package co.libly.resourceloader;
 
-
+// A test Sodium class
 public class Sodium {
 
     protected Sodium() { }

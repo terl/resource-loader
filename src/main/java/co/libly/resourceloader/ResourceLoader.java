@@ -76,10 +76,11 @@ public class ResourceLoader {
         // Create the required directories.
         mainTempDir.mkdirs();
 
-
         // Is the user loading this in a JAR?
         URL jarUrl = getThisJarPath(outsideClass);
 
+        // For spring boot, which often has lazysodium.jar
+        // within an app.jar, get the inner JAR.
         if (jarUrl.toString().startsWith("jar")) {
             String[] jarInJar = jarUrl.toString().split("!");
             jarUrl = doubleExtract(jarInJar);
@@ -101,9 +102,9 @@ public class ResourceLoader {
         return getFileFromFileSystem(relativePath, mainTempDir);
     }
 
-    public URL doubleExtract(String[] jarinjar) throws IOException, URISyntaxException {
-        URL outerJar = new URL(jarinjar[0] + "!/");
-        String innerJar = jarinjar[1];
+    public URL doubleExtract(String[] jarInJar) throws IOException, URISyntaxException {
+        URL outerJar = new URL(jarInJar[0] + "!/");
+        String innerJar = jarInJar[1];
 
         File tempDir = createMainTempDirectory();
         tempDir.mkdirs();
@@ -131,7 +132,7 @@ public class ResourceLoader {
     /**
      * Unzips a file/directory from a JAR if we're in a JAR. A JAR is simply
      * a zip file. We can unzip it and get our file successfully.
-     * @param jarUrl This JAR's URL.
+     * @param jarUrl A JAR's URL.
      * @param outputDir A directory of where to store our extracted files.
      * @param pathInJar A relative path to a file that is in our resources folder.
      * @return The file or directory that we requested.
