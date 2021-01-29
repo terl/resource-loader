@@ -76,24 +76,27 @@ public class ResourceLoader {
         // Create the required directories.
         mainTempDir.mkdirs();
 
-        // Is the user loading this in a JAR?
-        URL jarUrl = getThisJarPath(outsideClass);
+        // Is the user loading resources that are
+        // from inside a JAR?
+        URL fullJarPathURL = getThePathToTheJarWeAreIn(outsideClass);
 
-        // For spring boot, which often has lazysodium.jar
-        // within an app.jar, get the inner JAR.
-        if (jarUrl.toString().startsWith("jar")) {
-            String[] jarInJar = jarUrl.toString().split("!");
-            jarUrl = doubleExtract(jarInJar);
-        }
+        // Test if we are in a JAR and if we are
+        // then do the following...
+        if (isJarFile(fullJarPathURL)) {
+            // Split our JAR path
+            String[] split = fullJarPathURL.toString().split("(\\.jar)");
 
-        if (isJarFile(jarUrl)) {
-            // If so the get the file/directory
-            // from a JAR
-            try {
-                return getFileFromJar(jarUrl, mainTempDir, relativePath);
-            } catch (URISyntaxException e) {
-                // Do not print a stacktrace here!
-                // e.printStackTrace();
+            // Handle the case where we are in just one JAR
+            if (split.length == 1) {
+                return extractFilesOrFoldersFromJar(mainTempDir, fullJarPathURL, relativePath);
+            }
+
+            // Handle the case where we are in nested JARs
+            if (split.length > 1) {
+                File extracted = nestedExtract(mainTempDir, split);
+                if (extracted != null) {
+                    return extracted;
+                }
             }
         }
 
@@ -102,15 +105,34 @@ public class ResourceLoader {
         return getFileFromFileSystem(relativePath, mainTempDir);
     }
 
-    public URL doubleExtract(String[] jarInJar) throws IOException, URISyntaxException {
-        URL outerJar = new URL(jarInJar[0] + "!/");
-        String innerJar = jarInJar[1];
+    private File nestedExtract(File mainTempDir, String[] split) throws IOException, URISyntaxException {
+        File extracted = null;
+        File extractTo = mainTempDir;
 
-        File tempDir = createMainTempDirectory();
-        tempDir.mkdirs();
+        // This might initially give us a path like C:/app.jar
+        String currentJarPath = split[0] + ".jar";
+        for (int i = 0; i < split.length - 2; i++) {
+            // Always "look ahead" to the next JAR this may give us a path like
+            // some/folder/another.jar
+            String extractNextJar = removeSlashIfExists(split[i + 1] + ".jar");
 
-        File innerJarFile = getFileFromJar(outerJar, tempDir, innerJar);
-        return innerJarFile.toURI().toURL();
+            // This extracts the JAR initially to our temp dir
+            // like C:/temp/app.jar.
+            // On next iteration it will extract to C:/temp/some/folder
+            extracted = extractFilesOrFoldersFromJar(extractTo, new URL(currentJarPath), extractNextJar);
+
+            // Finally assign some variables for the next iteration.
+            extractTo = extracted.getAbsoluteFile().getParentFile();
+            currentJarPath = extracted.getAbsolutePath();
+        }
+        return extracted;
+    }
+
+    private String removeSlashIfExists(String s) {
+        if (s.startsWith("/")) {
+            return s.substring(1);
+        }
+        return s;
     }
 
     private boolean isJarFile(URL jarUrl) {
@@ -130,7 +152,7 @@ public class ResourceLoader {
     }
 
     /**
-     * Unzips a file/directory from a JAR if we're in a JAR. A JAR is simply
+     * Extracts a file/directory from a JAR. A JAR is simply
      * a zip file. We can unzip it and get our file successfully.
      * @param jarUrl A JAR's URL.
      * @param outputDir A directory of where to store our extracted files.
@@ -139,7 +161,7 @@ public class ResourceLoader {
      * @throws URISyntaxException If we could not ascertain our location.
      * @throws IOException If whilst unzipping we had some problems.
      */
-    private File getFileFromJar(URL jarUrl, File outputDir, String pathInJar) throws URISyntaxException, IOException {
+    private File extractFilesOrFoldersFromJar(File outputDir, URL jarUrl, String pathInJar) throws URISyntaxException, IOException {
         File jar = urlToFile(jarUrl);
         unzip(jar.getAbsolutePath(), outputDir.getAbsolutePath());
         String filePath = outputDir.getAbsolutePath() + pathInJar;
@@ -422,7 +444,7 @@ public class ResourceLoader {
      *
      * @param c The class whose location is desired.
      */
-    public static URL getThisJarPath(final Class<?> c) {
+    public static URL getThePathToTheJarWeAreIn(final Class<?> c) {
         if (c == null) return null; // could not load the class
 
         // Try the easy way first
@@ -443,26 +465,41 @@ public class ResourceLoader {
         // leaving the base path.
 
         // Get the class' raw resource path
+        // Should provide something like: jar:file:/C:/app.jar!/lazysodium.jar/com/some/package/Sodium.class
         final URL classResource = c.getResource(c.getSimpleName() + ".class");
         if (classResource == null) {
             return null; // cannot find class resource
         }
 
+        // This line should provide something like
+        // jar:file:/C:/app.jar!/lazysodium.jar/com/some/package/Sodium.class
         final String url = classResource.toString();
+
+        // This line will give us com/some/package/Sodium.class
         final String suffix = c.getCanonicalName().replace('.', '/') + ".class";
         if (!url.endsWith(suffix)) {
             return null; // weird URL
         }
 
         // Strip the class's path from the URL string
+        // This will now give us jar:file:/C:/app.jar!/lazysodium.jar/
         String path = url.substring(0, url.length() - suffix.length());
 
-        // Remove the "jar:" prefix and "!/" suffix, if present
+        // Remove the "jar:" prefix
         if (path.startsWith("jar:")) {
-            path = path.substring(4, path.length() - 2);
+            path = path.substring(4);
+        }
+
+        path = path.replaceAll("(\\.jar\\!)+", ".jar");
+
+        // Remove all slashes from the end
+        if (path.endsWith("/")) {
+            path = path.replaceAll("\\/*$", "");
         }
 
         try {
+            // This should result in something like
+            // file:/C:/app.jar!/lazysodium.jar
             return new URL(path);
         } catch (final MalformedURLException e) {
             e.printStackTrace();
