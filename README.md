@@ -65,7 +65,12 @@ SharedLibraryLoader.get().load("hydrogen", Hydrogen.class);
 ## What problem does Resource Loader solve?
 Consider the scenario. You have a project with some files in the `resource` folder. You're loading those files using `getResourceAsStream` and it's working when you test it locally. But when you go to package the project as a JAR and then run it, it fails!
 
-Resource Loader provides developers with a fool-proof way of loading files inside or outside JARs by loading the files in a temporary folder that gets deleted when the process closes.
- 
-Resource Loader works with shared libraries (`.dll`, `.so`, `.dylib`). Scouring the Internet to piece together a solution was a labour intensive task with many quirks and pitfalls to look out for. So we thought why not package our solution and provide it in a reusable form.
+Resource Loader provides developers with a fool-proof way of loading files inside or outside JARs by loading the files in a temporary folder that is deleted when the corresponding Java process that created that temp process has been destroyed.
 
+Here are some features of Resource Loader:
+ 
+- [x] Can be used in Android _**and**_ Java projects.
+- [x] Load from _nested_ JARs up to 20 levels deep.
+- [x] Resource Loader works with shared libraries (`.dll`, `.so`, `.dylib`) and can initialise them.
+- [x] Can extract regular files from the `resources` folder.
+- [x] Simple include this library and use the `.load` functions.
