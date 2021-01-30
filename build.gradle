@@ -38,12 +38,16 @@ repositories {
 }
 
 dependencies {
+    compileClasspath 'ch.qos.logback:logback-classic:1.2.3'
+    compileClasspath "org.slf4j:slf4j-api:2.0.0-alpha1"
+
     testImplementation "org.assertj:assertj-core:3.19.0"
     testImplementation "org.testng:testng:7.3.0"
     testImplementation "org.mockito:mockito-core:3.0.0"
     testImplementation "net.jodah:concurrentunit:0.4.6"
+    testImplementation 'ch.qos.logback:logback-classic:1.2.3'
+
     implementation "net.java.dev.jna:jna:5.5.0"
-    implementation "org.slf4j:slf4j-api:2.0.0-alpha1"
 }
 
 
@@ -51,6 +55,7 @@ test {
     useTestNG()
     scanForTestClasses = false
     testLogging {
+        showStandardStreams = true
         events "passed", "skipped", "failed"
     }
 }

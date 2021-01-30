@@ -12,6 +12,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.net.URL;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -49,6 +50,32 @@ public class FileLoaderTest {
                 .as("Load a directory with children")
                 .isDirectory()
                 .isNotEmptyDirectory();
+    }
+
+    @Test
+    public void extractANestedJar() throws Exception {
+        URL urlToJar = getClass().getResource("/jarinjar.jar");
+        File tempDir = FileLoader.createMainTempDirectory();
+        File f = fileLoader.extractFromWithinAJarFile(urlToJar, tempDir, "lazysodium.jar");
+
+        assertThat(f)
+                .as("Extract a JAR that's within a JAR")
+                .isNotNull()
+                .isNotEmpty()
+                .exists();
+    }
+
+    @Test
+    public void extractAFileFromANestedJar() throws Exception {
+        URL urlToJar = getClass().getResource("/jarinjar.jar");
+        File tempDir = FileLoader.createMainTempDirectory();
+        File f = fileLoader.extractFromWithinAJarFile(urlToJar, tempDir, "lazysodium.jar/mac/libsodium.dylib");
+
+        assertThat(f)
+                .as("Extract a file from a nested JAR")
+                .isNotNull()
+                .isNotEmpty()
+                .exists();
     }
 
 }

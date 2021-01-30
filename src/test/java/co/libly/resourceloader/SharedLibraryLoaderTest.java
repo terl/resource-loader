@@ -20,7 +20,6 @@ import java.util.concurrent.TimeoutException;
 
 public class SharedLibraryLoaderTest {
 
-
     @Test
     public void testLoadingFromJarOrFileSystem() {
         SharedLibraryLoader libLoader = SharedLibraryLoader.get();
@@ -96,7 +95,6 @@ public class SharedLibraryLoaderTest {
                 return "shared_libraries/linux/libsodium.so";
             }
         }
-
         throw new UnsupportedOperationException("Platform not supported for testing.");
     }
 

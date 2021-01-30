@@ -63,12 +63,6 @@ public class ResourceLoader {
      * @throws URISyntaxException If cannot find the resource file.
      */
     public File copyToTempDirectory(String relativePath, Class outsideClass) throws IOException, URISyntaxException {
-        // If the file does not start with a separator,
-        // then let's make sure it does!
-        if (!relativePath.startsWith("/")) {
-            relativePath = "/" + relativePath;
-        }
-
         // Create a "main" temporary directory in which
         // everything can be thrown in.
         File mainTempDir = createMainTempDirectory();
@@ -83,20 +77,9 @@ public class ResourceLoader {
         // Test if we are in a JAR and if we are
         // then do the following...
         if (isJarFile(fullJarPathURL)) {
-            // Split our JAR path
-            String[] split = fullJarPathURL.toString().split("(\\.jar)");
-
-            // Handle the case where we are in just one JAR
-            if (split.length == 1) {
-                return extractFilesOrFoldersFromJar(mainTempDir, fullJarPathURL, relativePath);
-            }
-
-            // Handle the case where we are in nested JARs
-            if (split.length > 1) {
-                File extracted = nestedExtract(mainTempDir, split);
-                if (extracted != null) {
-                    return extracted;
-                }
+            File extracted = extractFromWithinAJarFile(fullJarPathURL, mainTempDir, relativePath);
+            if (extracted != null) {
+                return extracted;
             }
         }
 
@@ -105,36 +88,105 @@ public class ResourceLoader {
         return getFileFromFileSystem(relativePath, mainTempDir);
     }
 
-    private File nestedExtract(File mainTempDir, String[] split) throws IOException, URISyntaxException {
-        File extracted = null;
-        File extractTo = mainTempDir;
-
-        // This might initially give us a path like C:/app.jar
-        String currentJarPath = split[0] + ".jar";
-        for (int i = 0; i < split.length - 2; i++) {
-            // Always "look ahead" to the next JAR this may give us a path like
-            // some/folder/another.jar
-            String extractNextJar = removeSlashIfExists(split[i + 1] + ".jar");
-
-            // This extracts the JAR initially to our temp dir
-            // like C:/temp/app.jar.
-            // On next iteration it will extract to C:/temp/some/folder
-            extracted = extractFilesOrFoldersFromJar(extractTo, new URL(currentJarPath), extractNextJar);
-
-            // Finally assign some variables for the next iteration.
-            extractTo = extracted.getAbsoluteFile().getParentFile();
-            currentJarPath = extracted.getAbsolutePath();
+    public File extractFromWithinAJarFile(URL jarPath, File mainTempDir, String relativePath)
+            throws IOException, URISyntaxException {
+        if (jarPath == null) {
+            return null;
         }
-        return extracted;
+        // Split our JAR path
+        String fullPath = jarPath.toString() + prefixStringWithSlashIfNotAlready(relativePath);
+        return nestedExtract(mainTempDir, fullPath);
     }
 
-    private String removeSlashIfExists(String s) {
-        if (s.startsWith("/")) {
-            return s.substring(1);
+    /**
+     * If the string does not start with a slash, then
+     * // make sure it does.
+     * @param s A string to prefix
+     * @return A string with a slash prefixed
+     */
+    private String prefixStringWithSlashIfNotAlready(String s) {
+        if (!s.startsWith("/")) {
+            s = "/" + s;
         }
         return s;
     }
 
+    /**
+     * A method that keeps extracting JAR files from within each other.
+     * This method only allows a maximum nested depth of 20.
+     * @param extractTo Where shall we initially extract files to.
+     * @param fullPath The full path to the initial
+     * @return The final extracted file.
+     * @throws IOException
+     * @throws URISyntaxException
+     */
+    private File nestedExtract(File extractTo, String fullPath) throws IOException, URISyntaxException {
+        final String JAR = ".jar";
+
+        // After this line we have something like
+        // file:C/app, some/lazysodium, file.txt
+        String[] split = fullPath.split("(\\.jar/)");
+
+        if (split.length > 20) {
+            // What monster would put a JAR in a JAR 20 times?
+            throw new StackOverflowError("We cannot extract a file 10 layers deep.");
+        }
+
+        // We have no ".jar/" so we go straight
+        // to extraction.
+        if (split.length == 1) {
+            logger.debug("Extracted {} to {}", fullPath, extractTo.getAbsolutePath());
+            return extractFilesOrFoldersFromJar(extractTo, new URL(fullPath), "");
+        }
+
+        String currentExtractionPath = "";
+        File extracted = null;
+        for (int i = 0; i < split.length - 1; i++) {
+            // Remember a part = "file:C/app". But we need to know
+            // where to extract these files. So we have
+            // to prefix it with the current extraction path. We can't
+            // just dump everything in the temp directory all the time.
+            // Of course, we also suffix it with a ".jar". So at the end,
+            // we get something like "file:C:/temp/app.jar"
+            String part = currentExtractionPath + split[i] + JAR;
+            // If we don't add this then when we pass it into
+            // a URL() object then the URL object will complain
+            if (!part.startsWith("file:")) {
+                part = "file:" + part;
+            }
+
+            // Now we need to "look ahead" and determine
+            // what the next part. We'd get something like
+            // this... "/lazysodium".
+            String nextPart = "/" + split[i + 1];
+
+            // Now check if it's the last iteration of this for-loop.
+            // If it isn't then add a ".jar" to nextPart, resulting
+            // in something like "/lazysodium.jar"
+            boolean isLastIteration = (i == (split.length - 2));
+            if (!isLastIteration) {
+                nextPart = nextPart + JAR;
+            }
+
+            // Now perform the extraction.
+            logger.debug("Extracting {} from {}", nextPart, part);
+            extracted = extractFilesOrFoldersFromJar(extractTo, new URL(part), nextPart);
+            logger.debug("Extracted: {}", extracted.getAbsolutePath());
+
+            // Note down the parent folder's location of the file we extracted to.
+            // This will be used at the start of the for-loop as the
+            // new destination to extract to.
+            currentExtractionPath = extracted.getParentFile().getAbsolutePath() + "/";
+        }
+        return extracted;
+    }
+
+    /**
+     * Does the URL lead to a valid JAR file? Usually
+     * valid JAR files have a manifest.
+     * @param jarUrl
+     * @return
+     */
     private boolean isJarFile(URL jarUrl) {
         if (jarUrl != null) {
             try (JarFile jarFile = new JarFile(jarUrl.getPath())) {
@@ -177,6 +229,7 @@ public class ResourceLoader {
      * @throws IOException Could not find your requested file.
      */
     private File getFileFromFileSystem(String relativePath, File outputDir) throws IOException, URISyntaxException {
+        relativePath = prefixStringWithSlashIfNotAlready(relativePath);
         final URL url = ResourceLoader.class.getResource(relativePath);
         final String urlString = url.getFile();
         final File file;
