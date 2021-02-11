@@ -11,7 +11,7 @@ Resource Loader gives you the functions to load `resource` files even if you are
 
 ## Installation
 
-This is how to install the library in Gradle based projects. Maven based projects may differ.
+This is how to install the library in Gradle based projects.
 
 ```groovy
 // Top-level build.gradle
@@ -24,6 +24,26 @@ dependencies {
     // ...
     implementation 'co.libly:resource-loader:1.3.7' // Add this line
 }
+```
+
+This is how to install the library in Maven based projects.
+
+```xml
+  <repositories>
+    <repository>
+      <id>j-center</id>
+      <name>J Center Bintray</name>
+      <url>https://jcenter.bintray.com/</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>co.libly</groupId>
+      <artifactId>resource-loader</artifactId>
+      <version>1.3.10</version>
+    </dependency>
+  </dependencies>
 ```
 
 ## Usage
