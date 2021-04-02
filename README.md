@@ -22,7 +22,7 @@ repositories {
 
 dependencies {
     // ...
-    implementation 'co.libly:resource-loader:1.3.7' // Add this line
+    implementation 'com.goterl:resource-loader:2.0.0' // Add this line
 }
 ```
 
