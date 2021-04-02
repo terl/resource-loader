@@ -17,7 +17,7 @@ This is how to install the library in Gradle based projects.
 // Top-level build.gradle
 repositories {
     // ...
-    jcenter()
+    mavenCentral()
 }
 
 dependencies {
@@ -26,25 +26,6 @@ dependencies {
 }
 ```
 
-This is how to install the library in Maven based projects.
-
-```xml
-  <repositories>
-    <repository>
-      <id>j-center</id>
-      <name>J Center Bintray</name>
-      <url>https://jcenter.bintray.com/</url>
-    </repository>
-  </repositories>
-
-  <dependencies>
-    <dependency>
-      <groupId>co.libly</groupId>
-      <artifactId>resource-loader</artifactId>
-      <version>1.3.10</version>
-    </dependency>
-  </dependencies>
-```
 
 ## Usage
 
