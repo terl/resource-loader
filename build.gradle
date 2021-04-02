@@ -20,7 +20,7 @@ plugins {
 
 ext {
     artifactId = "resource-loader"
-    groupId = "co.libly"
+    groupId = "com.goterl"
     version = '1.3.10'
     description = "Resource Loader gives you the functions to load resource files inside or outside JARs."
 }
@@ -28,7 +28,7 @@ ext {
 
 group project.ext.groupId
 version = project.ext.version
-mainClassName = "co.libly.resourceloader.Main"
+mainClassName = "com.goterl.resourceloader.Main"
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
@@ -64,7 +64,7 @@ test {
 jar {
     manifest {
         attributes(
-            'Main-Class': 'co.libly.resourceloader.Main'
+            'Main-Class': 'com.goterl.resourceloader.Main'
         )
     }
 }
