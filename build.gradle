@@ -14,8 +14,7 @@ plugins {
     id 'signing'
     id 'maven'
     id 'maven-publish'
-    id "com.jfrog.bintray" version "1.8.5"
-    id 'osgi'
+    id 'biz.aQute.bnd.builder'
 }
 
 ext {
@@ -69,6 +68,38 @@ jar {
     }
 }
 
+void loadProps() {
+    File secretPropsFile = project.rootProject.file('local.properties')
+    if (secretPropsFile.exists()) {
+        Properties p = new Properties()
+        new FileInputStream(secretPropsFile).withCloseable { is ->
+            p.load(is)
+        }
+        p.each { name, value ->
+            ext[name] = value
+        }
+    }
+}
+
+loadProps()
+
+// Return an empty string if a property
+// cannot be found
+String getProp(String propName) {
+    if (ext.hasProperty(propName) != null) {
+        return ext[propName]
+    } else {
+        return ""
+    }
+}
+
+String getUserName() {
+    return getProp("ossrhUsername")
+}
+
+String getPassword() {
+    return getProp("ossrhPassword")
+}
 
 
 // Tasks
@@ -76,7 +107,7 @@ signing {
     // This will use the GPG Agent
     // to sign the jar
     useGpgCmd()
-    sign configurations.archives
+    sign publishing.publications
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
@@ -89,7 +120,6 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 
-
 task signPom(type: Sign) {
     sign project.file("$buildDir/publications/mavenJava/pom-default.xml")
 
@@ -99,7 +129,6 @@ task signPom(type: Sign) {
     // create a new signature
     outputs.upToDateWhen { false }
 }
-
 
 artifacts {
     archives sourcesJar, javadocJar
@@ -117,31 +146,16 @@ publishing {
             artifact sourcesJar
             artifact javadocJar
 
-
-            project.tasks.withType(Sign) {
-                signatures.all {
-                    def type = it.type
-                    if (it.file.name.endsWith('.tar.gz.asc')) {
-                        // Workaround in case a tar.gz file should published
-                        type = 'tar.gz.asc'
-                    } else if (it.type.equals('xml.asc')) {
-                        // Set correct extension for signature of pom file
-                        type = 'pom.asc'
-                    }
-                    artifact source: it.file, classifier: it.classifier ?: null, extension: type
-                }
-            }
-
             pom.withXml {
                 def root = asNode()
                 root.appendNode('description', project.ext.description)
                 root.appendNode('name', project.ext.artifactId)
-                root.appendNode('url', 'https://github.com/libly/resource-loader')
+                root.appendNode('url', 'https://github.com/terl/resource-loader')
 
                 def scm = root.appendNode('scm')
-                scm.appendNode("connection", "scm:git:git://github.com/libly/resource-loader.git")
-                scm.appendNode("developerConnection", "scm:git:ssh://github.com/libly/resource-loader")
-                scm.appendNode("url", "http://github.com/libly/resource-loader")
+                scm.appendNode("connection", "scm:git:git://github.com/terl/resource-loader.git")
+                scm.appendNode("developerConnection", "scm:git:ssh://github.com/terl/resource-loader")
+                scm.appendNode("url", "http://github.com/terl/resource-loader")
 
                 def license = root.appendNode('licenses').appendNode('license')
                 license.appendNode('name', 'MIT')
@@ -149,45 +163,24 @@ publishing {
                 license.appendNode('distribution', 'repo')
 
                 def developer = root.appendNode('developers').appendNode('developer')
-                developer.appendNode('name', 'Libly')
-                developer.appendNode('email', 'hello@libly.co')
+                developer.appendNode('name', 'Terl Tech Ltd')
+                developer.appendNode('email', 'hello@terl.co')
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            name = "sonatype"
+            url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            credentials {
+                username getUserName()
+                password getPassword()
             }
         }
     }
 }
 
-
-bintray {
-    user = findProperty("bintray.user")
-    key = findProperty("bintray.apiKey")
-    publications = ['mavenJava']
-    publish = true
-    pkg {
-        repo = 'maven'
-        name = project.ext.artifactId
-        userOrg = 'libly'
-        desc = project.ext.description
-        licenses = ['MPL-2.0']
-        issueTrackerUrl = "https://github.com/libly/resource-loader/issues"
-        vcsUrl = 'https://github.com/libly/resource-loader.git'
-
-        version {
-            name = project.ext.version
-            released = new java.util.Date()
-            vcsTag = project.ext.version
-        }
-    }
-}
-
-
-model {
-    tasks.publishMavenJavaPublicationToMavenLocal {
-        dependsOn project.tasks.withType(Sign)
-    }
-    tasks.signPom {
-        dependsOn tasks.generatePomFileForMavenJavaPublication
-    }
-}
 
 tasks.withType(Test) {
     // a collection to track failedTests
