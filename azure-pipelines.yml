@@ -1,3 +1,7 @@
+# DEPRECATED.
+# Azure Pipelines has been deprecated in favour of
+# GitHub Actions. See the .github/workflows folder
+
 trigger:
 - master
 
