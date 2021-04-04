@@ -20,7 +20,7 @@ plugins {
 ext {
     artifactId = "resource-loader"
     groupId = "com.goterl"
-    version = '2.0.0'
+    version = '2.0.1'
     description = "Resource Loader gives you the functions to load resource files inside or outside JARs."
 }
 
@@ -87,6 +87,7 @@ void loadProps() {
 
 loadProps()
 
+
 // Return an empty string if a property
 // cannot be found
 String getProp(String propName) {
@@ -97,12 +98,12 @@ String getPropBool(String propName) {
     return ext.hasProperty(propName) == null ? false : ext[propName]
 }
 
-String getUserName() {
-    return getProp("ossrhUsername")
+String getSonatypeUserName() {
+    return findProperty("ossrhUsername")
 }
 
-String getPassword() {
-    return getProp("ossrhPassword")
+String getSonatypePassword() {
+    return findProperty("ossrhPassword")
 }
 
 boolean isCi() {
@@ -200,16 +201,16 @@ publishing {
             name = "release"
             url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
             credentials {
-                username getUserName()
-                password getPassword()
+                username getSonatypeUserName()
+                password getSonatypePassword()
             }
         }
         maven {
             name = "snapshot"
             url = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
             credentials {
-                username getUserName()
-                password getPassword()
+                username getSonatypeUserName()
+                password getSonatypePassword()
             }
         }
     }
