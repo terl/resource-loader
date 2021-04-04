@@ -110,19 +110,19 @@ boolean isCi() {
 }
 
 String getSigningKey() {
-    return getProp("signingKey")
+    return ext.signingKey
+}
+
+String getSigningKeyId() {
+    return ext.signingKeyId
 }
 
 String getSigningPassword() {
-    return getProp("signingPassword")
+    return ext.signingPassword
 }
 
 signing {
-    if (isCi()) {
-        useInMemoryPgpKeys(getSigningKey(), getSigningPassword())
-    } else {
-        useGpgCmd()
-    }
+    useGpgCmd()
     sign publishing.publications
 }
 
