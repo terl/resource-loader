@@ -78,6 +78,10 @@ void loadProps() {
         p.each { name, value ->
             ext[name] = value
         }
+    } else {
+        ext.isCi = true
+        ext.signingKey = findProperty("GPG_PRIVATE_KEY")
+        ext.signingPassword = findProperty("GPG_PASSPHRASE")
     }
 }
 
@@ -86,11 +90,11 @@ loadProps()
 // Return an empty string if a property
 // cannot be found
 String getProp(String propName) {
-    if (ext.hasProperty(propName) != null) {
-        return ext[propName]
-    } else {
-        return ""
-    }
+    return ext.hasProperty(propName) == null ? "" : ext[propName]
+}
+
+String getPropBool(String propName) {
+    return ext.hasProperty(propName) == null ? false : ext[propName]
 }
 
 String getUserName() {
@@ -101,12 +105,24 @@ String getPassword() {
     return getProp("ossrhPassword")
 }
 
+boolean isCi() {
+    return getPropBool("isCi")
+}
 
-// Tasks
+String getSigningKey() {
+    return getProp("signingKey")
+}
+
+String getSigningPassword() {
+    return getProp("signingPassword")
+}
+
 signing {
-    // This will use the GPG Agent
-    // to sign the jar
-    useGpgCmd()
+    if (isCi()) {
+        useInMemoryPgpKeys(getSigningKey(), getSigningPassword())
+    } else {
+        useGpgCmd()
+    }
     sign publishing.publications
 }
 
