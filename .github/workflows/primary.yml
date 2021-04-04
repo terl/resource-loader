@@ -34,4 +34,3 @@ jobs:
         run: ./gradlew publishSnapshotPublicationToSnapshotRepository
         if: env.WORKFLOW_CONCLUSION == 'success'
 
-
