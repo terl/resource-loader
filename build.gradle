@@ -134,11 +134,40 @@ artifacts {
     archives sourcesJar, javadocJar
 }
 
+Closure createPomClosure = {
+    def root = asNode()
+    root.appendNode('description', project.ext.description)
+    root.appendNode('name', project.ext.artifactId)
+    root.appendNode('url', 'https://github.com/terl/resource-loader')
 
+    def scm = root.appendNode('scm')
+    scm.appendNode("connection", "scm:git:git://github.com/terl/resource-loader.git")
+    scm.appendNode("developerConnection", "scm:git:ssh://github.com/terl/resource-loader")
+    scm.appendNode("url", "http://github.com/terl/resource-loader")
+
+    def license = root.appendNode('licenses').appendNode('license')
+    license.appendNode('name', 'MIT')
+    license.appendNode('url', 'https://opensource.org/licenses/MIT')
+    license.appendNode('distribution', 'repo')
+
+    def developer = root.appendNode('developers').appendNode('developer')
+    developer.appendNode('name', 'Terl Tech Ltd')
+    developer.appendNode('email', 'hello@terl.co')
+}
 
 publishing {
     publications {
-        mavenJava(MavenPublication) {
+        snapshot(MavenPublication) {
+            from components.java
+            groupId project.ext.groupId
+            artifactId project.ext.artifactId
+            version project.ext.version + "-SNAPSHOT"
+            artifact sourcesJar
+            artifact javadocJar
+
+            pom.withXml createPomClosure
+        }
+        release(MavenPublication) {
             from components.java
             groupId project.ext.groupId
             artifactId project.ext.artifactId
@@ -146,33 +175,22 @@ publishing {
             artifact sourcesJar
             artifact javadocJar
 
-            pom.withXml {
-                def root = asNode()
-                root.appendNode('description', project.ext.description)
-                root.appendNode('name', project.ext.artifactId)
-                root.appendNode('url', 'https://github.com/terl/resource-loader')
-
-                def scm = root.appendNode('scm')
-                scm.appendNode("connection", "scm:git:git://github.com/terl/resource-loader.git")
-                scm.appendNode("developerConnection", "scm:git:ssh://github.com/terl/resource-loader")
-                scm.appendNode("url", "http://github.com/terl/resource-loader")
-
-                def license = root.appendNode('licenses').appendNode('license')
-                license.appendNode('name', 'MIT')
-                license.appendNode('url', 'https://opensource.org/licenses/MIT')
-                license.appendNode('distribution', 'repo')
-
-                def developer = root.appendNode('developers').appendNode('developer')
-                developer.appendNode('name', 'Terl Tech Ltd')
-                developer.appendNode('email', 'hello@terl.co')
-            }
+            pom.withXml createPomClosure
         }
     }
 
     repositories {
         maven {
-            name = "sonatype"
+            name = "release"
             url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            credentials {
+                username getUserName()
+                password getPassword()
+            }
+        }
+        maven {
+            name = "snapshot"
+            url = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
             credentials {
                 username getUserName()
                 password getPassword()
