@@ -80,8 +80,6 @@ void loadProps() {
         }
     } else {
         ext.isCi = true
-        ext.signingKey = findProperty("GPG_PRIVATE_KEY")
-        ext.signingPassword = findProperty("GPG_PASSPHRASE")
     }
 }
 
