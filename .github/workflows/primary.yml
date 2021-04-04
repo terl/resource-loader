@@ -42,13 +42,7 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
 #        if: env.WORKFLOW_CONCLUSION == 'success'
-      - name: GPG user IDs
-        run: |
-          echo "fingerprint: ${{ steps.import_gpg.outputs.fingerprint }}"
-          echo "keyid:       ${{ steps.import_gpg.outputs.keyid }}"
-          echo "name:        ${{ steps.import_gpg.outputs.name }}"
-          echo "email:       ${{ steps.import_gpg.outputs.email }}"
       - name: Publish
-        run: ./gradlew publishSnapshotPublicationToSnapshotRepository -Psigning.gnupg.keyName="${{ steps.import_gpg.outputs.keyid }}" -Psigning.password="${{ secrets.GPG_PASSPHRASE }}"
+        run: ./gradlew publishSnapshotPublicationToSnapshotRepository -Psigning.gnupg.keyName="${{ secrets.GPG_SIGNING_SUBKEY_ID }}" -Psigning.password="${{ secrets.GPG_PASSPHRASE }}"
 #        if: env.WORKFLOW_CONCLUSION == 'success'
 
