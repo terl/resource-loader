@@ -141,6 +141,7 @@ public class ResourceLoader {
 
         String currentExtractionPath = "";
         File extracted = null;
+        File nestedExtractTo = extractTo;
         for (int i = 0; i < split.length - 1; i++) {
             // Remember a part = "file:C/app". But we need to know
             // where to extract these files. So we have
@@ -170,13 +171,14 @@ public class ResourceLoader {
 
             // Now perform the extraction.
             logger.debug("Extracting {} from {}", nextPart, part);
-            extracted = extractFilesOrFoldersFromJar(extractTo, new URL(part), nextPart);
+            extracted = extractFilesOrFoldersFromJar(nestedExtractTo, new URL(part), nextPart);
             logger.debug("Extracted: {}", extracted.getAbsolutePath());
 
             // Note down the parent folder's location of the file we extracted to.
             // This will be used at the start of the for-loop as the
             // new destination to extract to.
-            currentExtractionPath = extracted.getParentFile().getAbsolutePath() + "/";
+            currentExtractionPath = nestedExtractTo.getAbsolutePath() + "/";
+            nestedExtractTo = extracted.getParentFile();
         }
         return extracted;
     }
@@ -189,7 +191,17 @@ public class ResourceLoader {
      */
     private boolean isJarFile(URL jarUrl) {
         if (jarUrl != null) {
-            try (JarFile jarFile = new JarFile(jarUrl.getPath())) {
+            // Split jarinjar file path
+            // Get first jar file
+            String[] split = jarUrl.getPath().split("(\\.jar/)");
+            String path;
+            if (split.length == 1) {
+                path = jarUrl.getPath();
+            } else {
+                path = split[0] + ".jar";
+            }
+
+            try (JarFile jarFile = new JarFile(path)) {
                 // Successfully opened the jar file. Check if there's a manifest
                 // This is probably not necessary
                 Manifest manifest = jarFile.getManifest();
@@ -505,7 +517,7 @@ public class ResourceLoader {
             final URL codeSourceLocation =
                     c.getProtectionDomain().getCodeSource().getLocation();
             if (codeSourceLocation != null) {
-                return codeSourceLocation;
+                return getPathToTheNestedJar(codeSourceLocation.toString());
             }
         } catch (final SecurityException e) {
             // Cannot access protection domain.
@@ -538,26 +550,7 @@ public class ResourceLoader {
         // This will now give us jar:file:/C:/app.jar!/lazysodium.jar/
         String path = url.substring(0, url.length() - suffix.length());
 
-        // Remove the "jar:" prefix
-        if (path.startsWith("jar:")) {
-            path = path.substring(4);
-        }
-
-        path = path.replaceAll("(\\.jar\\!)+", ".jar");
-
-        // Remove all slashes from the end
-        if (path.endsWith("/")) {
-            path = path.replaceAll("\\/*$", "");
-        }
-
-        try {
-            // This should result in something like
-            // file:/C:/app.jar!/lazysodium.jar
-            return new URL(path);
-        } catch (final MalformedURLException e) {
-            e.printStackTrace();
-            return null;
-        }
+        return getPathToTheNestedJar(path);
     }
 
     /**
@@ -608,5 +601,29 @@ public class ResourceLoader {
             return new File(path);
         }
         throw new IllegalArgumentException("Invalid URL: " + url);
+    }
+
+    /**
+     * If the given URL is URL of jar, converts the given URL of jar to file URL
+     * @param url
+     * @return
+     */
+    private static URL getPathToTheNestedJar(String url) {
+        // Remove the "jar:" prefix
+        if (url.startsWith("jar:")) {
+            url = url.substring(4);
+        }
+        url = url.replaceAll("(\\.jar\\!)+", ".jar");
+        // Remove all slashes from the end
+        if (url.endsWith("/")) {
+            url = url.replaceAll("\\/*$", "");
+        }
+        try {
+            // This should result in something like
+            // file:/C:/app.jar/lazysodium.jar
+            return new URL(url);
+        } catch (MalformedURLException e) {
+            return null;
+        }
     }
 }
