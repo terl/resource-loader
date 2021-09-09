@@ -189,14 +189,14 @@ public class ResourceLoader {
      */
     private boolean isJarFile(URL jarUrl) {
         if (jarUrl != null) {
-            try (JarFile jarFile = new JarFile(jarUrl.getPath())) {
+            try (JarFile jarFile = new JarFile(new File(jarUrl.toURI()))) {
                 // Successfully opened the jar file. Check if there's a manifest
                 // This is probably not necessary
                 Manifest manifest = jarFile.getManifest();
                 if (manifest != null) {
                     return true;
                 }
-            } catch (IOException | IllegalStateException | SecurityException e) {
+            } catch (IOException | IllegalStateException | SecurityException | URISyntaxException e) {
                 logger.debug("This is not a JAR file due to {}", e.getMessage());
             }
         }
