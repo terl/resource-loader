@@ -45,7 +45,6 @@ dependencies {
     testImplementation "org.mockito:mockito-core:4.1.0"
     testImplementation "net.jodah:concurrentunit:0.4.6"
     testImplementation 'ch.qos.logback:logback-classic:1.2.9'
-
 }
 
 

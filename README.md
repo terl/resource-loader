@@ -21,7 +21,7 @@ repositories {
 
 dependencies {
     // ...
-    implementation 'com.goterl:resource-loader:2.0.1' // Add this line
+    implementation 'com.goterl:resource-loader:2.0.2' // Add this line
 }
 ```
 
