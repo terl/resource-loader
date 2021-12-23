@@ -94,7 +94,7 @@ public class ResourceLoader {
             return null;
         }
         // Split our JAR path
-        String fullPath = jarPath.toString() + prefixStringWithSlashIfNotAlready(relativePath);
+        String fullPath = jarPath + prefixStringWithSlashIfNotAlready(relativePath);
         return nestedExtract(mainTempDir, fullPath);
     }
 
@@ -129,7 +129,7 @@ public class ResourceLoader {
 
         if (split.length > 20) {
             // What monster would put a JAR in a JAR 20 times?
-            throw new StackOverflowError("We cannot extract a file 10 layers deep.");
+            throw new StackOverflowError("We cannot extract a file 21 or more layers deep.");
         }
 
         // We have no ".jar/" so we go straight
@@ -143,7 +143,7 @@ public class ResourceLoader {
         File extracted = null;
         File nestedExtractTo = extractTo;
         for (int i = 0; i < split.length - 1; i++) {
-            // Remember a part = "file:C/app". But we need to know
+            // Remember part = "file:C/app". But we need to know
             // where to extract these files. So we have
             // to prefix it with the current extraction path. We can't
             // just dump everything in the temp directory all the time.
@@ -156,9 +156,9 @@ public class ResourceLoader {
                 part = "file:" + part;
             }
 
-            // Now we need to "look ahead" and determine
-            // what the next part. We'd get something like
-            // this... "/lazysodium".
+            // Now, we need to "look ahead" and determine
+            // the next part. We'd get something like
+            // this: "/lazysodium".
             String nextPart = "/" + split[i + 1];
 
             // Now check if it's the last iteration of this for-loop.
@@ -191,8 +191,6 @@ public class ResourceLoader {
      */
     private boolean isJarFile(URL jarUrl) {
         if (jarUrl != null) {
-            // Split jarinjar file path
-            // Get first jar file
             String[] split = jarUrl.getPath().split("(\\.jar/)");
             String path;
             if (split.length == 1) {
