@@ -20,7 +20,7 @@ plugins {
 ext {
     artifactId = "resource-loader"
     groupId = "com.goterl"
-    version = '2.0.1'
+    version = '2.0.2'
     description = "Resource Loader gives you the functions to load resource files inside or outside JARs."
 }
 
@@ -37,16 +37,14 @@ repositories {
 }
 
 dependencies {
-    compileClasspath 'ch.qos.logback:logback-classic:1.2.3'
-    compileClasspath "org.slf4j:slf4j-api:2.0.0-alpha1"
+    implementation "org.slf4j:slf4j-api:2.0.0-alpha1"
+    implementation "net.java.dev.jna:jna:5.9.0"
 
-    testImplementation "org.assertj:assertj-core:3.19.0"
-    testImplementation "org.testng:testng:7.3.0"
-    testImplementation "org.mockito:mockito-core:3.0.0"
+    testImplementation "org.assertj:assertj-core:3.21.0"
+    testImplementation "org.testng:testng:7.4.0"
+    testImplementation "org.mockito:mockito-core:4.1.0"
     testImplementation "net.jodah:concurrentunit:0.4.6"
-    testImplementation 'ch.qos.logback:logback-classic:1.2.3'
-
-    implementation "net.java.dev.jna:jna:5.5.0"
+    testImplementation 'ch.qos.logback:logback-classic:1.2.9'
 }
 
 
@@ -63,7 +61,9 @@ test {
 jar {
     manifest {
         attributes(
-            'Main-Class': 'com.goterl.resourceloader.Main'
+            'Main-Class': 'com.goterl.resourceloader.Main',
+            "-exportcontents": "com.goterl.resourceloader.*",
+            "-sources": true
         )
     }
 }

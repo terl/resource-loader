@@ -94,7 +94,7 @@ public class ResourceLoader {
             return null;
         }
         // Split our JAR path
-        String fullPath = jarPath.toString() + prefixStringWithSlashIfNotAlready(relativePath);
+        String fullPath = jarPath + prefixStringWithSlashIfNotAlready(relativePath);
         return nestedExtract(mainTempDir, fullPath);
     }
 
@@ -129,7 +129,7 @@ public class ResourceLoader {
 
         if (split.length > 20) {
             // What monster would put a JAR in a JAR 20 times?
-            throw new StackOverflowError("We cannot extract a file 10 layers deep.");
+            throw new StackOverflowError("We cannot extract a file 21 or more layers deep.");
         }
 
         // We have no ".jar/" so we go straight
@@ -141,8 +141,9 @@ public class ResourceLoader {
 
         String currentExtractionPath = "";
         File extracted = null;
+        File nestedExtractTo = extractTo;
         for (int i = 0; i < split.length - 1; i++) {
-            // Remember a part = "file:C/app". But we need to know
+            // Remember part = "file:C/app". But we need to know
             // where to extract these files. So we have
             // to prefix it with the current extraction path. We can't
             // just dump everything in the temp directory all the time.
@@ -155,9 +156,9 @@ public class ResourceLoader {
                 part = "file:" + part;
             }
 
-            // Now we need to "look ahead" and determine
-            // what the next part. We'd get something like
-            // this... "/lazysodium".
+            // Now, we need to "look ahead" and determine
+            // the next part. We'd get something like
+            // this: "/lazysodium".
             String nextPart = "/" + split[i + 1];
 
             // Now check if it's the last iteration of this for-loop.
@@ -170,13 +171,14 @@ public class ResourceLoader {
 
             // Now perform the extraction.
             logger.debug("Extracting {} from {}", nextPart, part);
-            extracted = extractFilesOrFoldersFromJar(extractTo, new URL(part), nextPart);
+            extracted = extractFilesOrFoldersFromJar(nestedExtractTo, new URL(part), nextPart);
             logger.debug("Extracted: {}", extracted.getAbsolutePath());
 
             // Note down the parent folder's location of the file we extracted to.
             // This will be used at the start of the for-loop as the
             // new destination to extract to.
-            currentExtractionPath = extracted.getParentFile().getAbsolutePath() + "/";
+            currentExtractionPath = nestedExtractTo.getAbsolutePath() + "/";
+            nestedExtractTo = extracted.getParentFile();
         }
         return extracted;
     }
@@ -189,7 +191,14 @@ public class ResourceLoader {
      */
     private boolean isJarFile(URL jarUrl) {
         if (jarUrl != null) {
-            try (JarFile jarFile = new JarFile(new File(jarUrl.toURI()))) {
+            String urlString = jarUrl.toString();
+
+            String[] split = urlString.split("(\\.jar/)");
+            if (split.length > 1) {
+                urlString = split[0] + ".jar";
+            }
+
+            try (JarFile jarFile = new JarFile(new File(new URL(urlString).toURI()))) {
                 // Successfully opened the jar file. Check if there's a manifest
                 // This is probably not necessary
                 Manifest manifest = jarFile.getManifest();
@@ -505,7 +514,7 @@ public class ResourceLoader {
             final URL codeSourceLocation =
                     c.getProtectionDomain().getCodeSource().getLocation();
             if (codeSourceLocation != null) {
-                return codeSourceLocation;
+                return getPathToTheNestedJar(codeSourceLocation.toString());
             }
         } catch (final SecurityException e) {
             // Cannot access protection domain.
@@ -538,26 +547,7 @@ public class ResourceLoader {
         // This will now give us jar:file:/C:/app.jar!/lazysodium.jar/
         String path = url.substring(0, url.length() - suffix.length());
 
-        // Remove the "jar:" prefix
-        if (path.startsWith("jar:")) {
-            path = path.substring(4);
-        }
-
-        path = path.replaceAll("(\\.jar\\!)+", ".jar");
-
-        // Remove all slashes from the end
-        if (path.endsWith("/")) {
-            path = path.replaceAll("\\/*$", "");
-        }
-
-        try {
-            // This should result in something like
-            // file:/C:/app.jar!/lazysodium.jar
-            return new URL(path);
-        } catch (final MalformedURLException e) {
-            e.printStackTrace();
-            return null;
-        }
+        return getPathToTheNestedJar(path);
     }
 
     /**
@@ -608,5 +598,29 @@ public class ResourceLoader {
             return new File(path);
         }
         throw new IllegalArgumentException("Invalid URL: " + url);
+    }
+
+    /**
+     * If the given URL is URL of jar, converts the given URL of jar to file URL
+     * @param url
+     * @return
+     */
+    private static URL getPathToTheNestedJar(String url) {
+        // Remove the "jar:" prefix
+        if (url.startsWith("jar:")) {
+            url = url.substring(4);
+        }
+        url = url.replaceAll("(\\.jar\\!)+", ".jar");
+        // Remove all slashes from the end
+        if (url.endsWith("/")) {
+            url = url.replaceAll("\\/*$", "");
+        }
+        try {
+            // This should result in something like
+            // file:/C:/app.jar/lazysodium.jar
+            return new URL(url);
+        } catch (MalformedURLException e) {
+            return null;
+        }
     }
 }
