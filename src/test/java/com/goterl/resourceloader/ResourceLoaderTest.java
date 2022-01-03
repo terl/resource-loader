@@ -1,7 +1,5 @@
 package com.goterl.resourceloader;
 
-import org.testng.annotations.*;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -10,6 +8,10 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
+import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeTest;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -61,16 +63,21 @@ public class ResourceLoaderTest {
     @DataProvider(name = "isJarFileTestData")
     public static Object[][] isjars() {
         String jarUrl = ResourceLoaderTest.class.getResource("/jarinjar.jar").toString();
+        String jarUrlWithSpaces = ResourceLoaderTest.class.getResource("/jar with spaces.jar").toString();
         String innerJarUrl = jarUrl + "/lazysodium.jar";
         return new Object[][] {
-                {
-                    jarUrl,
-                        true
-                },
-                {
-                    innerJarUrl,
-                        true
-                }
+          {
+            jarUrl,
+            true
+          },
+          {
+            jarUrlWithSpaces,
+            true
+          },
+          {
+            innerJarUrl,
+            true
+          }
         };
     }
 
@@ -79,7 +86,7 @@ public class ResourceLoaderTest {
         Method method = ResourceLoader.class.getDeclaredMethod("isJarFile", URL.class);
         method.setAccessible(true);
         Object result = method.invoke(new ResourceLoader(), new URL(url));
-        assertThat(result).isEqualTo(true);
+        assertThat(result).isEqualTo(isJar);
     }
 
     @DataProvider(name = "nestedExtractTestData")
