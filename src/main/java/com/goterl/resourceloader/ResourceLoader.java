@@ -13,6 +13,7 @@ import com.sun.jna.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.imageio.ImageIO;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -70,6 +71,13 @@ public class ResourceLoader {
         // Create the required directories.
         mainTempDir.mkdirs();
 
+        // Check if we can access the resource using the classloader.
+        // This works for Java module.
+        File extracted = extractUsingClassLoader(mainTempDir, relativePath);
+        if (extracted != null) {
+            return extracted;
+        }
+
         // Is the user loading resources that are
         // from inside a JAR?
         URL fullJarPathURL = getThePathToTheJarWeAreIn(outsideClass);
@@ -77,7 +85,7 @@ public class ResourceLoader {
         // Test if we are in a JAR and if we are
         // then do the following...
         if (isJarFile(fullJarPathURL)) {
-            File extracted = extractFromWithinAJarFile(fullJarPathURL, mainTempDir, relativePath);
+            extracted = extractFromWithinAJarFile(fullJarPathURL, mainTempDir, relativePath);
             if (extracted != null) {
                 return extracted;
             }
@@ -86,6 +94,67 @@ public class ResourceLoader {
         // If not then get the file/directory
         // straight from the file system
         return getFileFromFileSystem(relativePath, mainTempDir);
+    }
+
+    // Copied from JDK 9 InputStream.transferTo()
+    private final int TRANSFER_BUFFER_SIZE = 8192;
+    private long transfer(final InputStream in, final OutputStream out) throws IOException {
+        Objects.requireNonNull(in, "in");
+        Objects.requireNonNull(out, "out");
+        long transferred = 0;
+        byte[] buffer = new byte[TRANSFER_BUFFER_SIZE];
+        int read;
+        while ((read = in.read(buffer, 0, TRANSFER_BUFFER_SIZE)) >= 0) {
+            out.write(buffer, 0, read);
+            transferred += read;
+        }
+        return transferred;
+    }
+
+    /**
+     * Extract a resource using the traditional class loader.
+     *
+     * This is the method to use when an application is packaged as a custom Java runtime image (via Jlink).
+     *
+     * @param mainTempDir Temporarily directory to extract resource
+     * @param relativePath A relative path to a file or directory
+     *                     relative to the resource folder.
+     * @return The file you want to load.
+     * @throws IOException if the extraction of the resource fails (while transferring data)
+     */
+    public File extractUsingClassLoader(File mainTempDir, String relativePath) throws IOException {
+
+        final ClassLoader cl = getClass().getClassLoader();
+        final InputStream is;
+
+        // When run from Java module, getResourceAsStream must be used. The Java module system does provide a
+        // JrtFileSystem where Path are implemented with JrtPath, but, JrtPath cannot be converted to a File using.
+        // toFile() It is not supported and throws NotSupportedOperation exception if called.
+
+        // FIXME: Does it have to be relative?
+        if (relativePath.charAt(0) == '/') {
+            is = cl.getResourceAsStream(relativePath.substring(1));
+        } else {
+            is = cl.getResourceAsStream(relativePath);
+        }
+
+        // Return null if resource can't be found that way.
+        if (is == null) {
+            return null;
+        }
+
+        // Create the temp file under the provided temp directory.
+        final Path extractedLibraryFile = Files.createTempFile(mainTempDir.toPath(), "resource-loader", null);
+
+        // Open an output stream to the tmp file then copy resource's bytes from the Java modules.
+        try (final OutputStream os = new BufferedOutputStream(new FileOutputStream(extractedLibraryFile.toFile()))) {
+            transfer(is, os);
+        } finally {
+            is.close();
+        }
+
+        // Finally, convert the path to a File.
+        return extractedLibraryFile.toFile();
     }
 
     public File extractFromWithinAJarFile(URL jarPath, File mainTempDir, String relativePath)
