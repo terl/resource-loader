@@ -58,7 +58,7 @@ public class ResourceLoader {
      * Copies a file into a temporary directory regardless of
      * if it is in a JAR or not.
      * @param relativePath A relative path to a file or directory
-     *                     relative to the resources folder.
+     *                     relative to the resource folder.
      * @return The file or directory you want to load.
      * @throws IOException If at any point processing of the resource file fails.
      * @throws URISyntaxException If cannot find the resource file.
@@ -73,7 +73,8 @@ public class ResourceLoader {
 
         // Check if we can access the resource using the classloader.
         // This works for Java module.
-        File extracted = extractUsingClassLoader(mainTempDir, relativePath);
+        File extracted;
+        extracted = extractUsingClassLoader(mainTempDir, relativePath);
         if (extracted != null) {
             return extracted;
         }
@@ -131,7 +132,7 @@ public class ResourceLoader {
         // JrtFileSystem where Path are implemented with JrtPath, but, JrtPath cannot be converted to a File using.
         // toFile() It is not supported and throws NotSupportedOperation exception if called.
 
-        // FIXME: Does it have to be relative?
+        // It should already be relative but just in case.
         if (relativePath.charAt(0) == '/') {
             is = cl.getResourceAsStream(relativePath.substring(1));
         } else {
