@@ -13,9 +13,9 @@ import com.sun.jna.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.imageio.ImageIO;
 import java.io.*;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.FileChannel;
@@ -71,17 +71,23 @@ public class ResourceLoader {
         // Create the required directories.
         mainTempDir.mkdirs();
 
-        // Check if we can access the resource using the classloader.
-        // This works for Java module.
+        // Is the user loading resources that are
+        // from inside a JAR?
+        URL fullJarPathURL = getThePathToTheJarWeAreIn(outsideClass);
+
         File extracted;
+
+        // Check if we can access the file using the classloader.
+        // This works when this library is used in a Java modular project and merged into a single module.
+        // https://github.com/beryx/badass-jlink-plugin.
+        //
+        // This call will quickly bail out with null if we are not running in a modular runtime image.
+        //
+        // NOTE: this won't work for directory.
         extracted = extractUsingClassLoader(mainTempDir, relativePath);
         if (extracted != null) {
             return extracted;
         }
-
-        // Is the user loading resources that are
-        // from inside a JAR?
-        URL fullJarPathURL = getThePathToTheJarWeAreIn(outsideClass);
 
         // Test if we are in a JAR and if we are
         // then do the following...
@@ -98,39 +104,67 @@ public class ResourceLoader {
     }
 
     // Copied from JDK 9 InputStream.transferTo()
-    private final int TRANSFER_BUFFER_SIZE = 8192;
-    private long transfer(final InputStream in, final OutputStream out) throws IOException {
+    private void transfer(final InputStream in, final OutputStream out) throws IOException {
         Objects.requireNonNull(in, "in");
         Objects.requireNonNull(out, "out");
-        long transferred = 0;
+        int TRANSFER_BUFFER_SIZE = 8192;
         byte[] buffer = new byte[TRANSFER_BUFFER_SIZE];
         int read;
         while ((read = in.read(buffer, 0, TRANSFER_BUFFER_SIZE)) >= 0) {
             out.write(buffer, 0, read);
-            transferred += read;
         }
-        return transferred;
+    }
+
+    /**
+     * Returns whether we are running from a modular runtime image without involving Java 9 APIs.
+     * Resource loaded from a JrtFileSystem will have the "jrt" protocol/scheme in their URL/URI.
+     * SEE JEP220.
+     *
+     * @param relativePath any file relative path to test
+     * @return true if we are running from a modular runtime image, false otherwise
+     */
+    private boolean isModularRuntimeImage(String relativePath) {
+        final URL url = getClass().getClassLoader().getResource(relativePath);
+        if (url != null && Objects.equals(url.getProtocol(), "jrt")) {
+            return true;
+        }
+        // Fall back to false if not a JRT or if getResource return null.
+        return false;
     }
 
     /**
      * Extract a resource using the traditional class loader.
      *
-     * This is the method to use when an application is packaged as a custom Java runtime image (via Jlink).
+     * This is the method to use when an application is packaged as a modular runtime image (via Jlink).
+     *
+     * NOTE: This method is unable to extract a directory.
      *
      * @param mainTempDir Temporarily directory to extract resource
-     * @param relativePath A relative path to a file or directory
-     *                     relative to the resource folder.
+     * @param relativePath A relative path to a file relative to the resource folder.
      * @return The file you want to load.
      * @throws IOException if the extraction of the resource fails (while transferring data)
      */
     public File extractUsingClassLoader(File mainTempDir, String relativePath) throws IOException {
 
+        // Bail out if we are not running from a modular runtime image. This is to keep backward compatibility
+        // with project already using this library and loading/copying directories.
+        if (!isModularRuntimeImage(relativePath)) {
+            return null;
+        }
+
         final ClassLoader cl = getClass().getClassLoader();
         final InputStream is;
 
-        // When run from Java module, getResourceAsStream must be used. The Java module system does provide a
+        // When run from modular runtime image, getResourceAsStream must be used. The Java module system does provide a
         // JrtFileSystem where Path are implemented with JrtPath, but, JrtPath cannot be converted to a File using.
         // toFile() It is not supported and throws NotSupportedOperation exception if called.
+
+        // As per JEP220, the URI scheme for modular Runtime image is:
+        // jrt:/[$MODULE[/$PATH]]
+
+        // If this library is used in a modular project using jlink and the https://github.com/beryx/badass-jlink-plugin
+        // plugin, then it will be merged into a single jar before being put into the host application module.
+        // Therefore, using this class' class loader will load resources relative to the merged module.
 
         // It should already be relative but just in case.
         if (relativePath.charAt(0) == '/') {
@@ -145,7 +179,8 @@ public class ResourceLoader {
         }
 
         // Create the temp file under the provided temp directory.
-        final Path extractedLibraryFile = Files.createTempFile(mainTempDir.toPath(), "resource-loader", null);
+        final Path extractedLibraryFile =
+                Files.createTempFile(mainTempDir.toPath(), "resource-loader", null);
 
         // Open an output stream to the tmp file then copy resource's bytes from the Java modules.
         try (final OutputStream os = new BufferedOutputStream(new FileOutputStream(extractedLibraryFile.toFile()))) {
