@@ -10,9 +10,8 @@ plugins {
     id 'java-library'
     id 'application'
     id 'idea'
-    id 'com.github.johnrengelman.shadow' version '5.1.0'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
     id 'signing'
-    id 'maven'
     id 'maven-publish'
     id 'biz.aQute.bnd.builder'
 }
@@ -28,8 +27,8 @@ ext {
 group project.ext.groupId
 version = project.ext.version
 mainClassName = "com.goterl.resourceloader.Main"
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = JavaVersion.VERSION_19
+targetCompatibility = JavaVersion.VERSION_19
 
 
 repositories {
@@ -37,14 +36,14 @@ repositories {
 }
 
 dependencies {
-    implementation "org.slf4j:slf4j-api:2.0.0-alpha1"
-    implementation "net.java.dev.jna:jna:5.9.0"
+    implementation "org.slf4j:slf4j-api:2.0.17"
+    implementation "net.java.dev.jna:jna:5.17.0"
 
-    testImplementation "org.assertj:assertj-core:3.21.0"
-    testImplementation "org.testng:testng:7.4.0"
+    testImplementation "org.assertj:assertj-core:3.27.3"
+    testImplementation "org.testng:testng:7.11.0"
     testImplementation "org.mockito:mockito-core:4.1.0"
     testImplementation "net.jodah:concurrentunit:0.4.6"
-    testImplementation 'ch.qos.logback:logback-classic:1.2.9'
+    testImplementation 'ch.qos.logback:logback-classic:1.5.18'
 }
 
 
