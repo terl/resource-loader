@@ -48,6 +48,10 @@ public class ResourceLoaderTest {
                 {
                         "jar:file:/app/target/app-0.0.1-SNAPSHOT.jar!/BOOT-INF/lib/lazysodium-java-5.0.1.jar!/",
                         "file:/app/target/app-0.0.1-SNAPSHOT.jar/BOOT-INF/lib/lazysodium-java-5.0.1.jar"
+                },
+                {
+                        "nested:/app/target/app-0.0.1-SNAPSHOT.jar!/BOOT-INF/lib/lazysodium-java-5.0.1.jar",
+                        "file:/app/target/app-0.0.1-SNAPSHOT.jar/BOOT-INF/lib/lazysodium-java-5.0.1.jar"
                 }
         };
     }

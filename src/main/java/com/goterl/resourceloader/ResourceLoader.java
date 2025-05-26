@@ -615,6 +615,10 @@ public class ResourceLoader {
         if (url.endsWith("/")) {
             url = url.replaceAll("\\/*$", "");
         }
+        if (url.startsWith("nested:")) {
+            // The nested syntax looks something like "nested:/app/appName.jar/!BOOT-INF/lib/lazysodium-java-5.1.4.jar"
+            url = url.replace("nested:", "file:").replace("/!", "/");
+        }
         try {
             // This should result in something like
             // file:/C:/app.jar/lazysodium.jar
