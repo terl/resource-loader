@@ -107,15 +107,15 @@ boolean isCi() {
     return getPropBool("isCi")
 }
 
-String getSigningKey() {
+static String getSigningKey() {
     return ext.signingKey
 }
 
-String getSigningKeyId() {
+static String getSigningKeyId() {
     return ext.signingKeyId
 }
 
-String getSigningPassword() {
+static String getSigningPassword() {
     return ext.signingPassword
 }
 
@@ -214,11 +214,11 @@ publishing {
 }
 
 // Force character encoding in case the workspace was not set up correctly
-tasks.withType(Javadoc) {
+tasks.withType(Javadoc).configureEach {
     options.encoding = 'UTF-8'
 }
 
-tasks.withType(Test) {
+tasks.withType(Test).configureEach {
     // a collection to track failedTests
     ext.failedTests = []
 
