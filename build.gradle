@@ -19,7 +19,7 @@ plugins {
 ext {
     artifactId = "resource-loader"
     groupId = "com.goterl"
-    version = '2.0.2'
+    version = '2.0.3'
     description = "Resource Loader gives you the functions to load resource files inside or outside JARs."
 }
 
@@ -196,7 +196,7 @@ publishing {
     repositories {
         maven {
             name = "release"
-            url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            url = "https://ossrh-staging-api.central.sonatype.com/service/local/"
             credentials {
                 username getSonatypeUserName()
                 password getSonatypePassword()
@@ -204,7 +204,7 @@ publishing {
         }
         maven {
             name = "snapshot"
-            url = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+            url = "https://central.sonatype.com/repository/maven-snapshots/"
             credentials {
                 username getSonatypeUserName()
                 password getSonatypePassword()
