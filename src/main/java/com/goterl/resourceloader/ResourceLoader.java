@@ -191,22 +191,21 @@ public class ResourceLoader {
      */
     private boolean isJarFile(URL jarUrl) {
         if (jarUrl != null) {
-            String[] split = jarUrl.getPath().split("(\\.jar/)");
-            String path;
-            if (split.length == 1) {
-                path = jarUrl.getPath();
-            } else {
-                path = split[0] + ".jar";
+            String urlString = jarUrl.toString();
+
+            String[] split = urlString.split("(\\.jar/)");
+            if (split.length > 1) {
+                urlString = split[0] + ".jar";
             }
 
-            try (JarFile jarFile = new JarFile(path)) {
+            try (JarFile jarFile = new JarFile(new File(new URL(urlString).toURI()))) {
                 // Successfully opened the jar file. Check if there's a manifest
                 // This is probably not necessary
                 Manifest manifest = jarFile.getManifest();
                 if (manifest != null) {
                     return true;
                 }
-            } catch (IOException | IllegalStateException | SecurityException e) {
+            } catch (IOException | IllegalStateException | SecurityException | URISyntaxException e) {
                 logger.debug("This is not a JAR file due to {}", e.getMessage());
             }
         }
