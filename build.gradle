@@ -27,8 +27,8 @@ ext {
 group project.ext.groupId
 version = project.ext.version
 mainClassName = "com.goterl.resourceloader.Main"
-sourceCompatibility = JavaVersion.VERSION_19
-targetCompatibility = JavaVersion.VERSION_19
+sourceCompatibility = JavaVersion.VERSION_21
+targetCompatibility = JavaVersion.VERSION_21
 
 
 repositories {
