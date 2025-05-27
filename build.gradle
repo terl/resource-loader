@@ -107,15 +107,15 @@ boolean isCi() {
     return getPropBool("isCi")
 }
 
-static String getSigningKey() {
+String getSigningKey() {
     return ext.signingKey
 }
 
-static String getSigningKeyId() {
+String getSigningKeyId() {
     return ext.signingKeyId
 }
 
-static String getSigningPassword() {
+String getSigningPassword() {
     return ext.signingPassword
 }
 
