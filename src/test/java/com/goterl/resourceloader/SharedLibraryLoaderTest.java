@@ -47,7 +47,7 @@ public class SharedLibraryLoaderTest {
             }
         });
         service.shutdown();
-        service.awaitTermination(1, TimeUnit.MINUTES);
+        service.awaitTermination(30, TimeUnit.SECONDS);
 
         // Wait for resume() to be called twice
         waiter.await(2000, 2);
@@ -76,7 +76,11 @@ public class SharedLibraryLoaderTest {
 
     private String getLibraryPath() {
         if (Platform.isMac()) {
-            return "shared_libraries/mac/libsodium.dylib";
+            if (Platform.isARM()) {
+                return "shared_libraries/mac_arm/libsodium.dylib";
+            } else {
+                return "shared_libraries/mac/libsodium.dylib";
+            }
         }
         if (Platform.isWindows()) {
             if (Platform.is64Bit()) {
