@@ -47,7 +47,7 @@ public class SharedLibraryLoaderTest {
             }
         });
         service.shutdown();
-        service.awaitTermination(1, TimeUnit.MINUTES);
+        service.awaitTermination(30, TimeUnit.SECONDS);
 
         // Wait for resume() to be called twice
         waiter.await(2000, 2);
