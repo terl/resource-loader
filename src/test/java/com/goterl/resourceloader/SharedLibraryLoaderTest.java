@@ -76,10 +76,10 @@ public class SharedLibraryLoaderTest {
 
     private String getLibraryPath() {
         if (Platform.isMac()) {
-            if (Platform.is64Bit()) {
-                return "shared_libraries/mac/libsodium.dylib";
+            if (Platform.isARM()) {
+                return "shared_libraries/mac_arm/libsodium.dylib";
             } else {
-                return "shared_libraries/mac64/libsodium.dylib";
+                return "shared_libraries/mac/libsodium.dylib";
             }
         }
         if (Platform.isWindows()) {
