@@ -19,7 +19,7 @@ plugins {
 ext {
     artifactId = "resource-loader"
     groupId = "com.goterl"
-    version = '2.0.3'
+    version = '2.1.0'
     description = "Resource Loader gives you the functions to load resource files inside or outside JARs."
 }
 
